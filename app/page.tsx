@@ -1,65 +1,114 @@
-import Image from "next/image";
+import Link from "next/link";
+import { Header } from "./_components/Header";
+import { FamilyPill } from "./_components/FamilyPill";
+import { RegressionPlot } from "./_components/plots/RegressionPlot";
+import { samplePoints } from "./_lib/sample-data";
+import { techniques } from "./_lib/techniques";
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <div className="flex min-h-screen flex-1 flex-col bg-white text-zinc-950">
+      <Header active="Home" />
+
+      <section className="grid grid-cols-1 gap-14 px-14 pt-[60px] lg:grid-cols-[1fr_540px]">
+        <div>
+          <span className="pill pill-outline mb-[22px]">
+            ✶ Interactive · No setup · Built for intuition
+          </span>
+          <h1 className="mt-[22px] max-w-[720px] text-[76px] font-semibold leading-[1.02] tracking-[-0.035em]">
+            See machine learning,
+            <br />
+            <span className="font-serif font-medium italic text-violet-600">in motion.</span>
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="mt-[22px] max-w-[520px] text-[18px] leading-[1.55] text-zinc-600">
+            Tweak the data, change a hyperparameter, watch the model learn. Each technique is a
+            playground — not a paragraph — so you build intuition the way researchers actually do.
           </p>
+          <div className="mt-[30px] flex gap-3">
+            <Link
+              href="/techniques"
+              className="inline-flex h-12 items-center rounded-full bg-zinc-950 px-[22px] text-sm font-medium text-white"
+            >
+              Start exploring
+            </Link>
+            <Link
+              href="/techniques/linear-regression"
+              className="inline-flex h-12 items-center rounded-full border border-zinc-300 bg-white px-[22px] text-sm font-medium"
+            >
+              Try a 60-second demo →
+            </Link>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+
+        <LiveRegressionCard />
+      </section>
+
+      <section className="mt-16 px-14 pb-20">
+        <div className="mb-5 flex items-baseline justify-between">
+          <h2 className="text-2xl font-semibold tracking-[-0.02em]">Pick a technique</h2>
+          <Link
+            href="/techniques"
+            className="font-mono text-xs text-zinc-500 hover:text-zinc-900"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            06 / 06  →  view all
+          </Link>
         </div>
-      </main>
+        <div className="grid grid-cols-1 gap-3.5 md:grid-cols-2 lg:grid-cols-3">
+          {techniques.map((t) => (
+            <Link
+              key={t.slug}
+              href={`/techniques/${t.slug}`}
+              className="flex flex-col gap-2.5 rounded-2xl border border-zinc-200 bg-white p-[18px] transition hover:border-zinc-300 hover:shadow-sm"
+            >
+              <div className="flex items-center justify-between">
+                <FamilyPill family={t.family} />
+                <span className="text-zinc-400">→</span>
+              </div>
+              <div className="text-[17px] font-semibold tracking-[-0.01em]">{t.name}</div>
+              <div className="text-[13.5px] leading-[1.5] text-zinc-600">{t.blurb}</div>
+            </Link>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function LiveRegressionCard() {
+  return (
+    <div className="overflow-hidden rounded-[18px] border border-zinc-200 bg-white shadow-[0_1px_0_rgba(0,0,0,0.02)]">
+      <div className="flex items-center justify-between border-b border-zinc-100 px-4 py-3">
+        <span className="font-mono text-[11px] text-zinc-500">linear-regression · live</span>
+        <span className="flex gap-1.5">
+          <span className="inline-block h-2 w-2 rounded-full bg-zinc-300" />
+          <span className="inline-block h-2 w-2 rounded-full bg-zinc-300" />
+          <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" />
+        </span>
+      </div>
+      <RegressionPlot
+        width={540}
+        height={340}
+        points={samplePoints}
+        slope={0.62}
+        intercept={0.18}
+        showResiduals
+      />
+      <div className="grid grid-cols-3 border-t border-zinc-100">
+        <Stat label="slope" value="0.621" />
+        <Stat label="intercept" value="0.183" mid />
+        <Stat label="MSE" value="0.0042" />
+      </div>
+    </div>
+  );
+}
+
+function Stat({ label, value, mid }: { label: string; value: string; mid?: boolean }) {
+  return (
+    <div className={`px-4 py-3 text-center ${mid ? "border-x border-zinc-100" : ""}`}>
+      <div className="font-mono text-[10.5px] uppercase tracking-[0.06em] text-zinc-400">
+        {label}
+      </div>
+      <div className="mt-1 font-mono text-base font-medium text-zinc-950">{value}</div>
     </div>
   );
 }
