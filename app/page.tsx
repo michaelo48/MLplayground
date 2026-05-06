@@ -10,21 +10,21 @@ export default function Home() {
     <div className="flex min-h-screen flex-1 flex-col bg-white text-zinc-950">
       <Header active="Home" />
 
-      <section className="grid grid-cols-1 gap-14 px-14 pt-[60px] lg:grid-cols-[1fr_540px]">
+      <section className="grid grid-cols-1 gap-10 px-4 pt-10 sm:px-8 md:gap-14 md:px-14 md:pt-[60px] lg:grid-cols-[1fr_540px]">
         <div>
           <span className="pill pill-outline mb-[22px]">
             ✶ Interactive · No setup · Built for intuition
           </span>
-          <h1 className="mt-[22px] max-w-[720px] text-[76px] font-semibold leading-[1.02] tracking-[-0.035em]">
+          <h1 className="mt-[22px] max-w-[720px] text-[44px] font-semibold leading-[1.02] tracking-[-0.035em] sm:text-[60px] lg:text-[76px]">
             See machine learning,
             <br />
             <span className="font-serif font-medium italic text-violet-600">in motion.</span>
           </h1>
-          <p className="mt-[22px] max-w-[520px] text-[18px] leading-[1.55] text-zinc-600">
+          <p className="mt-[22px] max-w-[520px] text-[16px] leading-[1.55] text-zinc-600 md:text-[18px]">
             Tweak the data, change a hyperparameter, watch the model learn. Each technique is a
             playground — not a paragraph — so you build intuition the way researchers actually do.
           </p>
-          <div className="mt-[30px] flex gap-3">
+          <div className="mt-[30px] flex flex-wrap gap-3">
             <Link
               href="/techniques"
               className="inline-flex h-12 items-center rounded-full bg-zinc-950 px-[22px] text-sm font-medium text-white"
@@ -43,8 +43,8 @@ export default function Home() {
         <LiveRegressionCard />
       </section>
 
-      <section className="mt-16 px-14 pb-20">
-        <div className="mb-5 flex items-baseline justify-between">
+      <section className="mt-12 px-4 pb-20 sm:px-8 md:mt-16 md:px-14">
+        <div className="mb-5 flex flex-wrap items-baseline justify-between gap-3">
           <h2 className="text-2xl font-semibold tracking-[-0.02em]">Pick a technique</h2>
           <Link
             href="/techniques"

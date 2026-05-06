@@ -36,19 +36,21 @@ function ComingSoon({
   return (
     <div className="flex min-h-screen flex-1 flex-col bg-white text-zinc-950">
       <Header active="Techniques" />
-      <div className="border-b border-zinc-100 px-14 pt-7 pb-[18px]">
+      <div className="border-b border-zinc-100 px-4 pt-6 pb-4 sm:px-8 md:px-14 md:pt-7 md:pb-[18px]">
         <div className="font-mono text-xs uppercase tracking-[0.06em] text-zinc-500">
           <Link href="/techniques" className="hover:text-zinc-900">
             Techniques
           </Link>{" "}
           · {family} · <span className="text-zinc-950">{name}</span>
         </div>
-        <div className="mt-2 flex items-end justify-between">
-          <h1 className="text-[38px] font-semibold tracking-[-0.025em]">{name}</h1>
+        <div className="mt-2 flex flex-wrap items-end justify-between gap-3">
+          <h1 className="text-[28px] font-semibold tracking-[-0.025em] sm:text-[32px] lg:text-[38px]">
+            {name}
+          </h1>
           <FamilyPill family={family} />
         </div>
       </div>
-      <div className="flex flex-1 items-center justify-center px-14 py-20">
+      <div className="flex flex-1 items-center justify-center px-4 py-16 sm:px-8 md:px-14 md:py-20">
         <div className="max-w-[480px] text-center">
           <div className="font-mono text-xs uppercase tracking-[0.08em] text-zinc-400">
             Playground in progress

@@ -15,10 +15,14 @@ type Props = {
   placement?: Placement;
 };
 
+// On mobile (< sm/lg) the playground stacks single-column, so a right- or
+// center-anchored tooltip can run off the left viewport edge. Force left
+// anchoring on small screens; restore the requested side at the breakpoint
+// where the layout has room.
 const sideClass: Record<Side, string> = {
-  center: "left-1/2 -translate-x-1/2",
+  center: "left-0 translate-x-0 sm:left-1/2 sm:-translate-x-1/2",
   left: "left-0",
-  right: "right-0",
+  right: "left-0 lg:left-auto lg:right-0",
 };
 
 export function InfoTooltip({ term, definition, side = "center", placement = "bottom" }: Props) {
@@ -38,7 +42,7 @@ export function InfoTooltip({ term, definition, side = "center", placement = "bo
       </button>
       <span
         role="tooltip"
-        className={`pointer-events-none absolute z-50 w-[260px] translate-y-1 rounded-lg border border-zinc-200 bg-white p-3 font-sans text-[12px] leading-[1.55] normal-case tracking-normal text-zinc-700 opacity-0 shadow-[0_8px_24px_rgba(0,0,0,0.08)] transition duration-150 group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:translate-y-0 group-focus-within:opacity-100 ${
+        className={`pointer-events-none absolute z-50 w-[260px] max-w-[calc(100vw-2rem)] translate-y-1 rounded-lg border border-zinc-200 bg-white p-3 font-sans text-[12px] leading-[1.55] normal-case tracking-normal text-zinc-700 opacity-0 shadow-[0_8px_24px_rgba(0,0,0,0.08)] transition duration-150 group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:translate-y-0 group-focus-within:opacity-100 ${
           sideClass[side]
         } ${isTop ? "bottom-full mb-2 -translate-y-1 group-hover:translate-y-0 group-focus-within:translate-y-0" : "top-full mt-2"}`}
       >

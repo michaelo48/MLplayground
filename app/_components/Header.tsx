@@ -21,9 +21,12 @@ export function Header({ active = "Techniques", variant = "light" }: HeaderProps
 
   return (
     <header
-      className={`relative z-10 flex items-center justify-between border-b px-14 py-[22px] ${wrap}`}
+      className={`relative z-10 flex items-center justify-between gap-3 border-b px-4 py-4 sm:px-8 md:px-14 md:py-[22px] ${wrap}`}
     >
-      <Link href="/" className="flex items-center gap-2.5 text-base font-semibold tracking-tight">
+      <Link
+        href="/"
+        className="flex shrink-0 items-center gap-2 text-sm font-semibold tracking-tight md:gap-2.5 md:text-base"
+      >
         <span
           aria-hidden
           className="inline-block h-[11px] w-[11px] rounded-full"
@@ -31,7 +34,7 @@ export function Header({ active = "Techniques", variant = "light" }: HeaderProps
         />
         Flowstate ML
       </Link>
-      <nav className={`flex gap-7 text-sm ${muteText}`}>
+      <nav className={`flex gap-4 text-xs sm:gap-6 sm:text-sm md:gap-7 ${muteText}`}>
         {items.map((item) => {
           const isActive = item.label === active;
           return (
@@ -45,10 +48,10 @@ export function Header({ active = "Techniques", variant = "light" }: HeaderProps
           );
         })}
       </nav>
-      <div className="flex items-center gap-2.5 text-[13px]">
-        <span className={`font-mono text-xs ${muteText}`}>v0.4 · build 318</span>
+      <div className="flex shrink-0 items-center gap-2.5 text-[13px]">
+        <span className={`hidden font-mono text-xs lg:inline ${muteText}`}>v0.4 · build 318</span>
         <span
-          className={`rounded-full border px-3.5 py-2 font-medium ${
+          className={`hidden rounded-full border px-3.5 py-2 font-medium sm:inline-flex ${
             dark ? "border-zinc-800" : "border-zinc-200"
           } ${inkText}`}
         >

@@ -36,7 +36,7 @@ export function LossCurve({ width, height, trajectory, color = "#7c3aed" }: Prop
   const last = path[path.length - 1];
 
   return (
-    <svg width={width} height={height} className="block">
+    <svg width={width} height={height} className="block h-auto max-w-full">
       <rect x={0} y={0} width={width} height={height} fill="#fafafa" />
       <line x1={pad} y1={pad + h} x2={pad + w} y2={pad + h} stroke="#e4e4e7" />
       <line x1={pad} y1={pad} x2={pad} y2={pad + h} stroke="#e4e4e7" />

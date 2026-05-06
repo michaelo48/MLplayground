@@ -8,6 +8,7 @@ import { RegressionPlot } from "../../../_components/plots/RegressionPlot";
 import { LossCurve } from "../../../_components/plots/LossCurve";
 import { glossary } from "../../../_lib/glossary";
 import type { Point } from "../../../_lib/sample-data";
+import { useElementSize } from "../../../_lib/useElementSize";
 import {
   convergedAt,
   datasets,
@@ -98,6 +99,11 @@ export function LinearRegressionPlayground() {
     else setSeed((s) => s + 1);
   };
 
+  // Both plots fill their containers. Initial sizes seed the SSR render; the
+  // ResizeObserver replaces them with measured pixels post-hydration.
+  const [plotBoxRef, plotSize] = useElementSize<HTMLDivElement>({ w: PLOT_W, h: PLOT_H });
+  const [lossBoxRef, lossSize] = useElementSize<HTMLDivElement>({ w: 780, h: 108 });
+
   const addSketchPoint = (e: React.MouseEvent<HTMLDivElement>) => {
     const r = e.currentTarget.getBoundingClientRect();
     // The overlay's box already corresponds to the data area (pad-cropped),
@@ -111,16 +117,18 @@ export function LinearRegressionPlayground() {
     <div className="flex min-h-screen flex-1 flex-col bg-white text-zinc-950">
       <Header active="Techniques" />
       {/* Breadcrumb + title */}
-      <div className="border-b border-zinc-100 px-14 pt-7 pb-[18px]">
+      <div className="border-b border-zinc-100 px-4 pt-6 pb-4 sm:px-8 md:px-14 md:pt-7 md:pb-[18px]">
         <div className="font-mono text-xs uppercase tracking-[0.06em] text-zinc-500">
           <Link href="/techniques" className="hover:text-zinc-900">
             Techniques
           </Link>{" "}
           · Supervised · <span className="text-zinc-950">Linear Regression</span>
         </div>
-        <div className="mt-2 flex items-end justify-between">
-          <h1 className="text-[38px] font-semibold tracking-[-0.025em]">Linear Regression</h1>
-          <div className="flex gap-2">
+        <div className="mt-2 flex flex-wrap items-end justify-between gap-3">
+          <h1 className="text-[28px] font-semibold tracking-[-0.025em] sm:text-[32px] lg:text-[38px]">
+            Linear Regression
+          </h1>
+          <div className="flex flex-wrap gap-2">
             <button onClick={reset} className="pill pill-outline hover:bg-zinc-50">
               ↺ Reset
             </button>
@@ -134,9 +142,9 @@ export function LinearRegressionPlayground() {
         </div>
       </div>
 
-      <div className="grid min-h-0 flex-1 grid-cols-[260px_1fr_320px]">
+      <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[260px_1fr_320px]">
         {/* Left: dataset */}
-        <aside className="flex flex-col gap-[22px] border-r border-zinc-100 p-[22px]">
+        <aside className="order-2 flex flex-col gap-[22px] border-zinc-100 p-4 sm:p-6 lg:order-1 lg:border-r lg:p-[22px]">
           <SidebarSection
             title={
               <>
@@ -217,7 +225,7 @@ export function LinearRegressionPlayground() {
         </aside>
 
         {/* Center: canvas */}
-        <main className="flex min-w-0 flex-col gap-[18px] p-7">
+        <main className="order-1 flex min-w-0 flex-col gap-[18px] p-4 sm:p-6 lg:order-2 lg:p-7">
           <div className="flex flex-1 flex-col overflow-hidden rounded-[14px] border border-zinc-200">
             <div className="flex items-center justify-between border-b border-zinc-100 px-4 py-3">
               <span className="font-mono text-[11px] tracking-[0.04em] text-zinc-500">
@@ -234,10 +242,10 @@ export function LinearRegressionPlayground() {
                 </span>
               </div>
             </div>
-            <div className="relative flex-1">
+            <div ref={plotBoxRef} className="relative min-h-[320px] flex-1">
               <RegressionPlot
-                width={PLOT_W}
-                height={PLOT_H}
+                width={plotSize.w}
+                height={plotSize.h}
                 points={points}
                 slope={fit.slope}
                 intercept={fit.intercept}
@@ -254,8 +262,8 @@ export function LinearRegressionPlayground() {
                   style={{
                     left: PLOT_PAD,
                     top: PLOT_PAD,
-                    width: PLOT_W - PLOT_PAD * 2,
-                    height: PLOT_H - PLOT_PAD * 2,
+                    width: plotSize.w - PLOT_PAD * 2,
+                    height: plotSize.h - PLOT_PAD * 2,
                   }}
                 />
               )}
@@ -265,8 +273,8 @@ export function LinearRegressionPlayground() {
                   style={{
                     left: PLOT_PAD,
                     top: PLOT_PAD,
-                    width: PLOT_W - PLOT_PAD * 2,
-                    height: PLOT_H - PLOT_PAD * 2,
+                    width: plotSize.w - PLOT_PAD * 2,
+                    height: plotSize.h - PLOT_PAD * 2,
                   }}
                 >
                   <span>Click anywhere on the plot</span>
@@ -285,16 +293,16 @@ export function LinearRegressionPlayground() {
                 final {hasFit ? finalLoss.toFixed(4) : "—"}
               </span>
             </div>
-            <div className="flex-1">
+            <div ref={lossBoxRef} className="flex-1">
               <LossCurve
-                width={780}
-                height={108}
+                width={lossSize.w}
+                height={lossSize.h}
                 trajectory={hasFit ? trajectory : undefined}
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-4 gap-px overflow-hidden rounded-[14px] border border-zinc-200 bg-zinc-100">
+          <div className="grid grid-cols-2 gap-px overflow-hidden rounded-[14px] border border-zinc-200 bg-zinc-100 sm:grid-cols-4">
             <Stat
               label={
                 <>
@@ -329,7 +337,7 @@ export function LinearRegressionPlayground() {
         </main>
 
         {/* Right: hyperparameters + math */}
-        <aside className="flex flex-col gap-[22px] border-l border-zinc-100 p-[22px]">
+        <aside className="order-3 flex flex-col gap-[22px] border-zinc-100 p-4 sm:p-6 lg:border-l lg:p-[22px]">
           <SidebarSection
             title={
               <>

@@ -85,7 +85,7 @@ export function RegressionPlot({
   }
 
   return (
-    <svg width={width} height={height} className="block">
+    <svg width={width} height={height} className="block h-auto max-w-full">
       <rect x={0} y={0} width={width} height={height} fill="#fff" />
       {grid}
       {band}

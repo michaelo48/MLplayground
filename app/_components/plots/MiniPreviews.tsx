@@ -14,7 +14,7 @@ export function KNNMini({ width, height }: SizeProps) {
   }
   const colors = ["#10b981", "#0ea5e9", "#7c3aed"];
   return (
-    <svg width={width} height={height} className="block">
+    <svg width={width} height={height} className="block h-auto max-w-full">
       <rect x={0} y={0} width={width} height={height} fill="#fff" />
       {pts.map((p, i) => (
         <circle
@@ -41,7 +41,7 @@ export function KNNMini({ width, height }: SizeProps) {
 
 export function TreeMini({ width: w, height: h }: SizeProps) {
   return (
-    <svg width={w} height={h} className="block">
+    <svg width={w} height={h} className="block h-auto max-w-full">
       <rect x={0} y={0} width={w} height={h} fill="#fff" />
       <rect x={0} y={0} width={w * 0.55} height={h} fill="rgba(16,185,129,0.10)" />
       <rect x={w * 0.55} y={0} width={w * 0.45} height={h * 0.5} fill="rgba(14,165,233,0.10)" />
@@ -73,7 +73,7 @@ export function KMeansMini({ width, height }: SizeProps) {
     }
   });
   return (
-    <svg width={width} height={height} className="block">
+    <svg width={width} height={height} className="block h-auto max-w-full">
       <rect x={0} y={0} width={width} height={height} fill="#fff" />
       {pts.map((p, i) => (
         <circle
@@ -129,7 +129,7 @@ export function PCAMini({ width, height }: SizeProps) {
     pts.push({ x, y });
   }
   return (
-    <svg width={width} height={height} className="block">
+    <svg width={width} height={height} className="block h-auto max-w-full">
       <rect x={0} y={0} width={width} height={height} fill="#fff" />
       {pts.map((p, i) => (
         <circle
@@ -200,7 +200,7 @@ export function NNMini({ width: w, height: h }: SizeProps) {
     }),
   );
   return (
-    <svg width={w} height={h} className="block">
+    <svg width={w} height={h} className="block h-auto max-w-full">
       <rect x={0} y={0} width={w} height={h} fill="#fff" />
       {edges}
       {nodes}
