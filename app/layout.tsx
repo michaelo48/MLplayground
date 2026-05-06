@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Fraunces } from "next/font/google";
+import { Geist, Geist_Mono, Fraunces, Inter_Tight, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -18,6 +18,17 @@ const fraunces = Fraunces({
   axes: ["opsz"],
 });
 
+const interTight = Inter_Tight({
+  variable: "--font-inter-tight",
+  subsets: ["latin"],
+});
+
+const ibmPlexMono = IBM_Plex_Mono({
+  variable: "--font-ibm-mono",
+  weight: ["400", "500", "600"],
+  subsets: ["latin"],
+});
+
 export const metadata: Metadata = {
   title: "Flowstate ML — see machine learning, in motion",
   description:
@@ -32,7 +43,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${fraunces.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${fraunces.variable} ${interTight.variable} ${ibmPlexMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans bg-zinc-100 text-zinc-950">
         {children}
