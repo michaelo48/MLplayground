@@ -9,6 +9,9 @@ type Props = {
   slope: number;
   intercept: number;
   showResiduals?: boolean;
+  showGrid?: boolean;
+  // ±sigma band around the regression line (translucent fill).
+  bandSigma?: number;
   palette?: Palette;
   dataDots?: "ink" | "mute";
 };
@@ -26,6 +29,8 @@ export function RegressionPlot({
   slope,
   intercept,
   showResiduals = false,
+  showGrid = true,
+  bandSigma,
   palette = "violet",
   dataDots = "ink",
 }: Props) {
@@ -39,12 +44,43 @@ export function RegressionPlot({
   const [bx, by] = proj(1, slope * 1 + intercept);
 
   const grid: React.ReactNode[] = [];
-  for (let i = 1; i < 5; i++) {
-    grid.push(
-      <line key={`vg${i}`} x1={pad + (i / 5) * w} x2={pad + (i / 5) * w} y1={pad} y2={pad + h} stroke="#f4f4f5" />,
-    );
-    grid.push(
-      <line key={`hg${i}`} x1={pad} x2={pad + w} y1={pad + (i / 5) * h} y2={pad + (i / 5) * h} stroke="#f4f4f5" />,
+  if (showGrid) {
+    for (let i = 1; i < 5; i++) {
+      grid.push(
+        <line
+          key={`vg${i}`}
+          x1={pad + (i / 5) * w}
+          x2={pad + (i / 5) * w}
+          y1={pad}
+          y2={pad + h}
+          stroke="#f4f4f5"
+        />,
+      );
+      grid.push(
+        <line
+          key={`hg${i}`}
+          x1={pad}
+          x2={pad + w}
+          y1={pad + (i / 5) * h}
+          y2={pad + (i / 5) * h}
+          stroke="#f4f4f5"
+        />,
+      );
+    }
+  }
+
+  let band: React.ReactNode = null;
+  if (bandSigma && bandSigma > 0) {
+    const [tlx, tly] = proj(0, intercept + bandSigma);
+    const [trx, try_] = proj(1, slope + intercept + bandSigma);
+    const [brx, bry] = proj(1, slope + intercept - bandSigma);
+    const [blx, bly] = proj(0, intercept - bandSigma);
+    band = (
+      <polygon
+        points={`${tlx},${tly} ${trx},${try_} ${brx},${bry} ${blx},${bly}`}
+        fill={lineColor}
+        fillOpacity={0.08}
+      />
     );
   }
 
@@ -52,6 +88,7 @@ export function RegressionPlot({
     <svg width={width} height={height} className="block">
       <rect x={0} y={0} width={width} height={height} fill="#fff" />
       {grid}
+      {band}
       <line x1={pad} y1={pad + h} x2={pad + w} y2={pad + h} stroke="#e4e4e7" />
       <line x1={pad} y1={pad} x2={pad} y2={pad + h} stroke="#e4e4e7" />
       <line

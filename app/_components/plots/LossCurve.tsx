@@ -1,24 +1,40 @@
 type Props = {
   width: number;
   height: number;
+  trajectory?: number[];
   color?: string;
-  points?: number;
 };
 
-export function LossCurve({ width, height, color = "#7c3aed", points = 60 }: Props) {
-  const pad = 18;
-  const w = width - pad * 2;
-  const h = height - pad * 2;
-  const path: Array<[number, number]> = [];
+// Default mock used by the static mini-preview / landing card. When a real
+// `trajectory` is supplied it's plotted instead, normalized to its own max.
+function defaultPath(points: number): Array<[number, number]> {
+  const out: Array<[number, number]> = [];
   for (let i = 0; i < points; i++) {
     const t = i / (points - 1);
     const v = Math.exp(-t * 4) * 0.95 + 0.05 + Math.sin(t * 12) * 0.02 * (1 - t);
-    path.push([t, v]);
+    out.push([t, v]);
   }
+  return out;
+}
+
+export function LossCurve({ width, height, trajectory, color = "#7c3aed" }: Props) {
+  const pad = 18;
+  const w = width - pad * 2;
+  const h = height - pad * 2;
+
+  let path: Array<[number, number]>;
+  if (trajectory && trajectory.length > 1) {
+    const max = Math.max(...trajectory) || 1;
+    path = trajectory.map((v, i) => [i / (trajectory.length - 1), v / max]);
+  } else {
+    path = defaultPath(60);
+  }
+
   const d = path
     .map(([t, v], i) => `${i === 0 ? "M" : "L"} ${pad + t * w} ${pad + (1 - v) * h}`)
     .join(" ");
   const last = path[path.length - 1];
+
   return (
     <svg width={width} height={height} className="block">
       <rect x={0} y={0} width={width} height={height} fill="#fafafa" />

@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -sf http://localhost:3007/ -o /dev/null)",
+      "Bash(cat \"/c/Users/mitch/AppData/Local/Temp/claude/g--flowstate-machine-learning-website/6e977d5a-1d10-4dd9-8b14-b358daf6044e/tasks/b8ug4htnl.output\")",
+      "Read(//c/Users/mitch/AppData/Local/Temp/claude/g--flowstate-machine-learning-website/6e977d5a-1d10-4dd9-8b14-b358daf6044e/tasks/**)"
+    ]
+  }
+}
