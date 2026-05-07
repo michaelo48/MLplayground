@@ -4,6 +4,7 @@ import { Header } from "../../_components/Header";
 import { FamilyPill } from "../../_components/FamilyPill";
 import { techniques, techniqueBySlug } from "../../_lib/techniques";
 import { LinearRegressionPlayground } from "./_playgrounds/LinearRegressionPlayground";
+import { KNNPlayground } from "./_playgrounds/KNNPlayground";
 
 export function generateStaticParams() {
   return techniques.map((t) => ({ slug: t.slug }));
@@ -20,6 +21,9 @@ export default async function TechniquePage({
 
   if (technique.slug === "linear-regression") {
     return <LinearRegressionPlayground />;
+  }
+  if (technique.slug === "k-nearest-neighbors") {
+    return <KNNPlayground />;
   }
   return <ComingSoon name={technique.name} family={technique.family} blurb={technique.blurb} />;
 }

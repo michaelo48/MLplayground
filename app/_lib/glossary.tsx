@@ -68,4 +68,51 @@ export const glossary: Record<string, Entry> = {
     definition:
       "The fraction of variance in y that the model explains. 1.0 is a perfect fit; 0 means the model is no better than predicting the mean; negative means it's worse.",
   },
+  k: {
+    term: "k · neighbors",
+    definition: (
+      <>
+        <p className="mb-2">
+          How many nearest training points get a vote on the query&apos;s class.
+        </p>
+        <ul className="space-y-1 text-zinc-600">
+          <li>
+            <b className="text-zinc-900">Small k</b> — jagged boundary, fits noise, high variance.
+          </li>
+          <li>
+            <b className="text-zinc-900">Large k</b> — smooth boundary, can blur small clusters,
+            high bias.
+          </li>
+        </ul>
+      </>
+    ),
+  },
+  distanceMetric: {
+    term: "Distance metric",
+    definition: (
+      <>
+        <p className="mb-2">How &ldquo;close&rdquo; two points are.</p>
+        <ul className="space-y-1 text-zinc-600">
+          <li>
+            <b className="text-zinc-900">Euclidean (L²)</b> — straight-line distance,{" "}
+            <span className="font-mono">√(Δx² + Δy²)</span>. The default.
+          </li>
+          <li>
+            <b className="text-zinc-900">Manhattan (L¹)</b> —{" "}
+            <span className="font-mono">|Δx| + |Δy|</span>. Prefers axis-aligned neighborhoods.
+          </li>
+        </ul>
+      </>
+    ),
+  },
+  decisionBoundary: {
+    term: "Decision boundary",
+    definition:
+      "The frontier between regions classified as one class vs. the other. For kNN it's a Voronoi-like patchwork — sharp and irregular near the data, smoothing out as k grows.",
+  },
+  looAccuracy: {
+    term: "Leave-one-out accuracy",
+    definition:
+      "For each training point, predict its class using all the others. Honest because using a point to predict itself would always score 100% at k = 1.",
+  },
 };
