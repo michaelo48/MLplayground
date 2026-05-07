@@ -41,7 +41,7 @@ type Mode = DatasetId | "sketch";
 
 const PLOT_W = 780;
 const PLOT_H = 420;
-const PLOT_PAD = 24;
+const PLOT_PAD = 40;
 
 const DEFAULTS = {
   mode: "synthetic" as Mode,
@@ -195,7 +195,7 @@ export function LinearRegressionPlayground() {
         </div>
       </div>
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[360px_1fr]">
+      <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[400px_1fr]">
         <main className="order-1 flex min-w-0 flex-col gap-[18px] p-4 sm:p-6 lg:order-2 lg:p-7">
           <div className="flex flex-1 flex-col overflow-hidden rounded-[14px] border border-zinc-200">
             <div className="flex items-center justify-between border-b border-zinc-100 px-4 py-3">

@@ -34,7 +34,7 @@ export function RegressionPlot({
   palette = "violet",
   dataDots = "ink",
 }: Props) {
-  const pad = 24;
+  const pad = 40;
   const w = width - pad * 2;
   const h = height - pad * 2;
   const lineColor = lineColors[palette];
