@@ -70,7 +70,6 @@ export function HeroDemo() {
   const [activeClass, setActiveClass] = useState<0 | 1>(0);
   const [k, setK] = useState(5);
   const [algo, setAlgo] = useState<Algo>("knn");
-  const [showBoundary, setShowBoundary] = useState(true);
 
   // Logistic weights are derived from points; recompute when the inputs change.
   const logisticW = algo === "logistic" ? fitLogistic(points) : ([0, 0, 0] as [number, number, number]);
@@ -113,7 +112,7 @@ export function HeroDemo() {
       ctx.clearRect(0, 0, w, h);
 
       // Decision boundary as a coarse cell grid.
-      if (showBoundary && points.length >= 2) {
+      if (points.length >= 2) {
         const cell = 14;
         const cols = Math.ceil(w / cell);
         const rows = Math.ceil(h / cell);
@@ -133,7 +132,7 @@ export function HeroDemo() {
       }
 
       // Logistic decision line on top of the cells, for crispness.
-      if (showBoundary && algo === "logistic" && points.length >= 2) {
+      if (algo === "logistic" && points.length >= 2) {
         const [w0, w1, w2] = logisticW;
         if (Math.abs(w2) > 1e-6) {
           const yL = -(w0 + w1 * 0) / w2;
@@ -164,7 +163,7 @@ export function HeroDemo() {
     const ro = new ResizeObserver(draw);
     ro.observe(wrap);
     return () => ro.disconnect();
-  }, [points, k, algo, showBoundary, logisticW]);
+  }, [points, k, algo, logisticW]);
 
   const onCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const rect = (e.target as HTMLCanvasElement).getBoundingClientRect();
@@ -197,39 +196,6 @@ export function HeroDemo() {
         <div className={styles.demoTitle}>
           <span className={styles.demoPill}>LIVE</span>
           Lesson 03 · Classification boundaries
-        </div>
-        <div className={styles.demoControls}>
-          <button
-            className={styles.iconBtn}
-            title="Reset"
-            onClick={() => setPoints(seedDemoPoints())}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="1 4 1 10 7 10" />
-              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
-            </svg>
-          </button>
-          <button
-            className={styles.iconBtn}
-            title="Sample data"
-            onClick={() => setPoints(seedDemoPoints())}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
-          </button>
-          <button
-            className={`${styles.iconBtn} ${showBoundary ? styles.active : ""}`}
-            title="Show decision boundary"
-            onClick={() => setShowBoundary((b) => !b)}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="9" />
-              <path d="M3 12h18" />
-            </svg>
-          </button>
         </div>
       </div>
       <div className={styles.demoBody}>

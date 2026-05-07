@@ -49,17 +49,25 @@ export function r2(pts: Point[], fit: Fit): number {
   return ssTot === 0 ? 0 : 1 - ssRes / ssTot;
 }
 
-// Batch gradient descent on MSE. Returns one entry per epoch (loss after the
-// step), prefixed with the initial loss — length = epochs + 1.
-export function gdTrajectory(pts: Point[], lr: number, epochs: number): number[] {
+// Each trajectory records loss once per epoch and the parameters at that same
+// epoch (params[0] is the initial state, params[epochs] is the final), so the
+// caller can replay the run by indexing into both arrays.
+export type Trajectory = { losses: number[]; params: Fit[]; fit: Fit };
+
+function emptyTraj(epochs: number): Trajectory {
+  const losses = new Array(epochs + 1).fill(0);
+  const params: Fit[] = new Array(epochs + 1).fill({ slope: 0, intercept: 0 });
+  return { losses, params, fit: { slope: 0, intercept: 0 } };
+}
+
+// Full-batch gradient descent on MSE.
+export function gdTrajectory(pts: Point[], lr: number, epochs: number): Trajectory {
   const n = pts.length;
+  if (n === 0) return emptyTraj(epochs);
   let b0 = 0;
   let b1 = 0;
   const losses = [mse(pts, { slope: b1, intercept: b0 })];
-  if (n === 0) {
-    for (let i = 0; i < epochs; i++) losses.push(0);
-    return losses;
-  }
+  const params: Fit[] = [{ slope: b1, intercept: b0 }];
   for (let i = 0; i < epochs; i++) {
     let g0 = 0;
     let g1 = 0;
@@ -71,8 +79,91 @@ export function gdTrajectory(pts: Point[], lr: number, epochs: number): number[]
     b0 -= lr * ((2 / n) * g0);
     b1 -= lr * ((2 / n) * g1);
     losses.push(mse(pts, { slope: b1, intercept: b0 }));
+    params.push({ slope: b1, intercept: b0 });
   }
-  return losses;
+  return { losses, params, fit: { slope: b1, intercept: b0 } };
+}
+
+// Stochastic GD: one update per point, full pass = one epoch. Records loss
+// after each completed epoch so the x-axis matches the other optimizers.
+export function sgdTrajectory(
+  pts: Point[],
+  lr: number,
+  epochs: number,
+  seed = 1,
+): Trajectory {
+  const n = pts.length;
+  if (n === 0) return emptyTraj(epochs);
+  let b0 = 0;
+  let b1 = 0;
+  const losses = [mse(pts, { slope: b1, intercept: b0 })];
+  const params: Fit[] = [{ slope: b1, intercept: b0 }];
+  const rand = mulberry32(seed);
+  const order = pts.map((_, i) => i);
+  for (let e = 0; e < epochs; e++) {
+    for (let k = order.length - 1; k > 0; k--) {
+      const j = Math.floor(rand() * (k + 1));
+      [order[k], order[j]] = [order[j], order[k]];
+    }
+    for (const idx of order) {
+      const p = pts[idx];
+      const err = b1 * p.x + b0 - p.y;
+      b0 -= lr * 2 * err;
+      b1 -= lr * 2 * err * p.x;
+    }
+    losses.push(mse(pts, { slope: b1, intercept: b0 }));
+    params.push({ slope: b1, intercept: b0 });
+  }
+  return { losses, params, fit: { slope: b1, intercept: b0 } };
+}
+
+// Adam (Kingma & Ba) on full-batch gradients. Standard hyperparameters.
+export function adamTrajectory(pts: Point[], lr: number, epochs: number): Trajectory {
+  const n = pts.length;
+  if (n === 0) return emptyTraj(epochs);
+  const beta1 = 0.9;
+  const beta2 = 0.999;
+  const eps = 1e-8;
+  let b0 = 0;
+  let b1 = 0;
+  let m0 = 0, m1 = 0, v0 = 0, v1 = 0;
+  const losses = [mse(pts, { slope: b1, intercept: b0 })];
+  const params: Fit[] = [{ slope: b1, intercept: b0 }];
+  for (let t = 1; t <= epochs; t++) {
+    let g0 = 0, g1 = 0;
+    for (const p of pts) {
+      const err = b1 * p.x + b0 - p.y;
+      g0 += err;
+      g1 += err * p.x;
+    }
+    g0 = (2 / n) * g0;
+    g1 = (2 / n) * g1;
+    m0 = beta1 * m0 + (1 - beta1) * g0;
+    m1 = beta1 * m1 + (1 - beta1) * g1;
+    v0 = beta2 * v0 + (1 - beta2) * g0 * g0;
+    v1 = beta2 * v1 + (1 - beta2) * g1 * g1;
+    const mh0 = m0 / (1 - Math.pow(beta1, t));
+    const mh1 = m1 / (1 - Math.pow(beta1, t));
+    const vh0 = v0 / (1 - Math.pow(beta2, t));
+    const vh1 = v1 / (1 - Math.pow(beta2, t));
+    b0 -= (lr * mh0) / (Math.sqrt(vh0) + eps);
+    b1 -= (lr * mh1) / (Math.sqrt(vh1) + eps);
+    losses.push(mse(pts, { slope: b1, intercept: b0 }));
+    params.push({ slope: b1, intercept: b0 });
+  }
+  return { losses, params, fit: { slope: b1, intercept: b0 } };
+}
+
+// OLS as a flat "trajectory" so it can sit on the same loss chart as a
+// reference floor (the optimum the iterative methods are reaching toward).
+export function olsTrajectory(pts: Point[], epochs: number): Trajectory {
+  const fit = olsFit(pts);
+  const final = mse(pts, fit);
+  return {
+    losses: new Array(epochs + 1).fill(final),
+    params: new Array(epochs + 1).fill(fit),
+    fit,
+  };
 }
 
 // First epoch where the loss got within `tol` of the trajectory's final

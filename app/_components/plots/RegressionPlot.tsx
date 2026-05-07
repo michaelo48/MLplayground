@@ -84,13 +84,69 @@ export function RegressionPlot({
     );
   }
 
+  const ticks = [0, 0.25, 0.5, 0.75, 1];
+  const tickLen = 4;
+
   return (
     <svg width={width} height={height} className="block h-auto max-w-full">
       <rect x={0} y={0} width={width} height={height} fill="#fff" />
       {grid}
       {band}
-      <line x1={pad} y1={pad + h} x2={pad + w} y2={pad + h} stroke="#e4e4e7" />
-      <line x1={pad} y1={pad} x2={pad} y2={pad + h} stroke="#e4e4e7" />
+      {/* X & Y axes */}
+      <line
+        x1={pad}
+        y1={pad + h}
+        x2={pad + w}
+        y2={pad + h}
+        stroke="#52525b"
+        strokeWidth={1.2}
+      />
+      <line
+        x1={pad}
+        y1={pad}
+        x2={pad}
+        y2={pad + h}
+        stroke="#52525b"
+        strokeWidth={1.2}
+      />
+      {/* X-axis ticks + labels */}
+      {ticks.map((t) => {
+        const x = pad + t * w;
+        return (
+          <g key={`xt${t}`}>
+            <line x1={x} y1={pad + h} x2={x} y2={pad + h + tickLen} stroke="#52525b" />
+            <text
+              x={x}
+              y={pad + h + tickLen + 10}
+              textAnchor="middle"
+              fontSize={9}
+              fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
+              fill="#71717a"
+            >
+              {t}
+            </text>
+          </g>
+        );
+      })}
+      {/* Y-axis ticks + labels */}
+      {ticks.map((t) => {
+        const y = pad + h - t * h;
+        return (
+          <g key={`yt${t}`}>
+            <line x1={pad - tickLen} y1={y} x2={pad} y2={y} stroke="#52525b" />
+            <text
+              x={pad - tickLen - 3}
+              y={y + 3}
+              textAnchor="end"
+              fontSize={9}
+              fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
+              fill="#71717a"
+            >
+              {t}
+            </text>
+          </g>
+        );
+      })}
       <line
         x1={ax}
         y1={ay}

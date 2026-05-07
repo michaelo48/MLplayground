@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Header } from "../../../_components/Header";
 import { InfoTooltip } from "../../../_components/InfoTooltip";
 import { RegressionPlot } from "../../../_components/plots/RegressionPlot";
@@ -10,17 +10,33 @@ import { glossary } from "../../../_lib/glossary";
 import type { Point } from "../../../_lib/sample-data";
 import { useElementSize } from "../../../_lib/useElementSize";
 import {
+  adamTrajectory,
   convergedAt,
   datasets,
   gdTrajectory,
   generateSyntheticData,
   mse,
-  olsFit,
+  olsTrajectory,
   r2,
+  sgdTrajectory,
   type DatasetId,
 } from "../../../_lib/ml";
 
 type Optimizer = "OLS (closed form)" | "Gradient descent" | "SGD" | "Adam";
+
+const OPTIMIZER_COLORS: Record<Optimizer, string> = {
+  "OLS (closed form)": "#71717a",
+  "Gradient descent": "#7c3aed",
+  SGD: "#ea580c",
+  Adam: "#10b981",
+};
+
+const OPTIMIZER_SHORT: Record<Optimizer, string> = {
+  "OLS (closed form)": "OLS",
+  "Gradient descent": "GD",
+  SGD: "SGD",
+  Adam: "Adam",
+};
 type Mode = DatasetId | "sketch";
 
 const PLOT_W = 780;
@@ -51,7 +67,7 @@ export function LinearRegressionPlayground() {
   const [mode, setMode] = useState<Mode>(DEFAULTS.mode);
   const [n, setN] = useState(DEFAULTS.n);
   const [sigma, setSigma] = useState(DEFAULTS.sigma);
-  const [seed, setSeed] = useState(DEFAULTS.seed);
+  const seed = DEFAULTS.seed;
   const [optimizer, setOptimizer] = useState<Optimizer>(DEFAULTS.optimizer);
   const [lr, setLr] = useState(DEFAULTS.lr);
   const [epochs, setEpochs] = useState(DEFAULTS.epochs);
@@ -69,35 +85,75 @@ export function LinearRegressionPlayground() {
   const isSketch = mode === "sketch";
   const hasFit = points.length >= 2;
 
-  const fit = useMemo(() => olsFit(points), [points]);
+  // All four optimizers run on every input change so the loss chart can show
+  // them side by side. They're cheap (a few hundred epochs over ~30 points).
+  const trajectories = useMemo(
+    () => ({
+      "OLS (closed form)": olsTrajectory(points, epochs),
+      "Gradient descent": gdTrajectory(points, lr, epochs),
+      SGD: sgdTrajectory(points, lr, epochs, seed),
+      Adam: adamTrajectory(points, lr, epochs),
+    }),
+    [points, lr, epochs, seed],
+  );
+
+  // Animation: null = settled at the end of the run; number = currently
+  // playing back, showing the state at that epoch. Cancels and resets whenever
+  // the inputs change so the user never sees stale frames.
+  const [playStep, setPlayStep] = useState<number | null>(null);
+  const rafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+    setPlayStep(null);
+  }, [points, lr, epochs, optimizer]);
+
+  const runAnimation = () => {
+    if (!hasFit) return;
+    if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+    setPlayStep(0);
+    const start = performance.now();
+    const duration = 2200;
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / duration);
+      // Ease-out so early epochs (where the action is) play slower than the
+      // long tail of asymptotic convergence.
+      const eased = 1 - Math.pow(1 - t, 2);
+      const step = Math.floor(eased * epochs);
+      if (t >= 1) {
+        setPlayStep(null);
+        rafRef.current = null;
+        return;
+      }
+      setPlayStep(step);
+      rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+  };
+
+  const isPlaying = playStep !== null;
+  const stepIdx = playStep ?? epochs;
+  const active = trajectories[optimizer];
+  const safeIdx = Math.min(stepIdx, active.params.length - 1);
+  const fit = active.params[safeIdx] ?? active.fit;
   const finalMse = useMemo(() => mse(points, fit), [points, fit]);
   const finalR2 = useMemo(() => r2(points, fit), [points, fit]);
-  const trajectory = useMemo(() => gdTrajectory(points, lr, epochs), [points, lr, epochs]);
-  const convergeIter = useMemo(() => convergedAt(trajectory, 1e-5), [trajectory]);
-  const converged = hasFit && convergeIter < epochs;
-  const initialMse = trajectory[0] ?? 0;
-  const finalLoss = trajectory[trajectory.length - 1] ?? 0;
+  const convergeIter = useMemo(() => convergedAt(active.losses, 1e-5), [active.losses]);
+  const converged = !isPlaying && hasFit && convergeIter < epochs;
+  const initialMse = active.losses[0] ?? 0;
+  const currentLoss = active.losses[safeIdx] ?? 0;
   const lossDeltaPct =
-    initialMse > 0 ? ((finalLoss - initialMse) / initialMse) * 100 : 0;
-
-  const reset = () => {
-    setMode(DEFAULTS.mode);
-    setN(DEFAULTS.n);
-    setSigma(DEFAULTS.sigma);
-    setSeed(DEFAULTS.seed);
-    setOptimizer(DEFAULTS.optimizer);
-    setLr(DEFAULTS.lr);
-    setEpochs(DEFAULTS.epochs);
-    setShowResiduals(DEFAULTS.showResiduals);
-    setShowConfBand(DEFAULTS.showConfBand);
-    setShowGrid(DEFAULTS.showGrid);
-    setSketchPoints([]);
-  };
-
-  const reshuffle = () => {
-    if (isSketch) setSketchPoints([]);
-    else setSeed((s) => s + 1);
-  };
+    initialMse > 0 ? ((currentLoss - initialMse) / initialMse) * 100 : 0;
+  const displayedIter = isPlaying ? safeIdx : Math.min(convergeIter, epochs);
 
   // Both plots fill their containers. Initial sizes seed the SSR render; the
   // ResizeObserver replaces them with measured pixels post-hydration.
@@ -114,7 +170,8 @@ export function LinearRegressionPlayground() {
   };
 
   return (
-    <div className="flex min-h-screen flex-1 flex-col bg-white text-zinc-950">
+    <div className="flex flex-col bg-white text-zinc-950">
+      <div className="flex flex-col lg:h-screen">
       <Header active="Techniques" />
       {/* Breadcrumb + title */}
       <div className="border-b border-zinc-100 px-4 pt-6 pb-4 sm:px-8 md:px-14 md:pt-7 md:pb-[18px]">
@@ -128,103 +185,17 @@ export function LinearRegressionPlayground() {
           <h1 className="text-[28px] font-semibold tracking-[-0.025em] sm:text-[32px] lg:text-[38px]">
             Linear Regression
           </h1>
-          <div className="flex flex-wrap gap-2">
-            <button onClick={reset} className="pill pill-outline hover:bg-zinc-50">
-              ↺ Reset
-            </button>
-            <button className="pill pill-outline hover:bg-zinc-50" type="button">
-              ⇧ Export model
-            </button>
-            <button onClick={reshuffle} className="pill pill-solid hover:bg-zinc-800">
-              Run ▶
-            </button>
-          </div>
+          <button
+            onClick={runAnimation}
+            disabled={!hasFit || isPlaying}
+            className="pill pill-solid hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {isPlaying ? `Running… ${safeIdx}/${epochs}` : "Run ▶"}
+          </button>
         </div>
       </div>
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[260px_1fr_320px]">
-        {/* Left: dataset */}
-        <aside className="order-2 flex flex-col gap-[22px] border-zinc-100 p-4 sm:p-6 lg:order-1 lg:border-r lg:p-[22px]">
-          <SidebarSection
-            title={
-              <>
-                Dataset
-                <InfoTooltip {...glossary.dataset} side="left" />
-              </>
-            }
-          >
-            {PICKER.map(({ id, label }) => (
-              <PickerRow
-                key={id}
-                label={label}
-                active={mode === id}
-                onClick={() => setMode(id)}
-              />
-            ))}
-          </SidebarSection>
-
-          {isSketch ? (
-            <SidebarSection title={`Points · n = ${sketchPoints.length}`}>
-              <p className="text-[12px] leading-[1.5] text-zinc-500">
-                Click anywhere on the plot to place a data point. Two or more lets the line fit.
-              </p>
-              <button
-                type="button"
-                onClick={() => setSketchPoints([])}
-                disabled={sketchPoints.length === 0}
-                className="self-start rounded border border-zinc-200 px-2.5 py-1 text-[12px] text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                Clear sketch
-              </button>
-            </SidebarSection>
-          ) : (
-            <>
-              <SidebarSection title={`Points · n = ${n}`}>
-                <RangeSlider value={n} min={10} max={100} step={1} onChange={setN} />
-                <ScaleLabel min="10" max="100" />
-              </SidebarSection>
-
-              <SidebarSection
-                title={
-                  <>
-                    Noise
-                    <InfoTooltip {...glossary.noise} side="left" />
-                    {` · σ = ${sigma.toFixed(3)}`}
-                  </>
-                }
-              >
-                <RangeSlider value={sigma} min={0} max={0.5} step={0.005} onChange={setSigma} />
-                <ScaleLabel min="0" max="0.5" />
-              </SidebarSection>
-            </>
-          )}
-
-          <SidebarSection title="Display">
-            <Toggle
-              label={
-                <>
-                  Show residuals
-                  <InfoTooltip {...glossary.residuals} side="left" />
-                </>
-              }
-              on={showResiduals}
-              onChange={setShowResiduals}
-            />
-            <Toggle
-              label={
-                <>
-                  Show confidence band
-                  <InfoTooltip {...glossary.confidenceBand} side="left" />
-                </>
-              }
-              on={showConfBand}
-              onChange={setShowConfBand}
-            />
-            <Toggle label="Show grid" on={showGrid} onChange={setShowGrid} />
-          </SidebarSection>
-        </aside>
-
-        {/* Center: canvas */}
+      <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[360px_1fr]">
         <main className="order-1 flex min-w-0 flex-col gap-[18px] p-4 sm:p-6 lg:order-2 lg:p-7">
           <div className="flex flex-1 flex-col overflow-hidden rounded-[14px] border border-zinc-200">
             <div className="flex items-center justify-between border-b border-zinc-100 px-4 py-3">
@@ -233,12 +204,78 @@ export function LinearRegressionPlayground() {
                   ? `FIT  ·  y = ${fit.slope.toFixed(3)}·x + ${fit.intercept.toFixed(3)}`
                   : "FIT  ·  awaiting data"}
               </span>
-              <div className="flex gap-3.5 font-mono text-[11px]">
-                <span className="text-zinc-500">
-                  iter {hasFit ? Math.min(convergeIter, epochs) : 0}/{epochs}
+              <div className="flex items-center gap-3.5 font-mono text-[11px]">
+                <span className="flex items-center gap-1.5 text-zinc-500">
+                  iter {hasFit ? displayedIter : 0}/{epochs}
+                  <InfoTooltip
+                    term="iter X / epochs"
+                    side="right"
+                    placement="bottom"
+                    definition={
+                      <>
+                        <p>
+                          <span className="font-mono">X</span> is how many update steps the
+                          optimizer has done so far. The denominator is the{" "}
+                          <span className="font-mono">epochs</span> budget you set in the right
+                          sidebar — the maximum it&apos;s allowed to take.
+                        </p>
+                        <p className="mt-1.5">
+                          If <span className="font-mono">X &lt; epochs</span> when it freezes, the
+                          loss stopped changing — the model converged early and the rest of the
+                          budget would&apos;ve been wasted compute.
+                        </p>
+                        <p className="mt-1.5">
+                          If <span className="font-mono">X = epochs</span>, the optimizer ran out
+                          of budget before settling. Bump epochs (or the learning rate) and it
+                          would keep improving.
+                        </p>
+                      </>
+                    }
+                  />
                 </span>
-                <span className={converged ? "text-emerald-500" : "text-zinc-400"}>
-                  {converged ? "✓ converged" : hasFit ? "… running" : "—"}
+                <span className="flex items-center gap-1.5">
+                  <span
+                    className={
+                      isPlaying
+                        ? "text-violet-600"
+                        : converged
+                        ? "text-emerald-500"
+                        : "text-zinc-400"
+                    }
+                  >
+                    {isPlaying
+                      ? "▶ running"
+                      : converged
+                      ? "✓ converged"
+                      : hasFit
+                      ? "… settled"
+                      : "—"}
+                  </span>
+                  {hasFit && (
+                    <InfoTooltip
+                      term="Run state"
+                      side="right"
+                      placement="bottom"
+                      definition={
+                        <>
+                          <p>
+                            <span className="font-mono text-violet-600">▶ running</span> — Run is
+                            replaying the optimizer epoch-by-epoch.
+                          </p>
+                          <p className="mt-1.5">
+                            <span className="font-mono text-emerald-600">✓ converged</span> — the
+                            loss reached its final value (within 10⁻⁵) before the epoch budget ran
+                            out. The remaining epochs aren&apos;t doing useful work.
+                          </p>
+                          <p className="mt-1.5">
+                            <span className="font-mono text-zinc-500">… settled</span> — the loss is
+                            still drifting at the last epoch. Try more epochs, a different learning
+                            rate, or another optimizer.
+                          </p>
+                        </>
+                      }
+                    />
+                  )}
                 </span>
               </div>
             </div>
@@ -284,20 +321,34 @@ export function LinearRegressionPlayground() {
             </div>
           </div>
 
-          <div className="flex h-[152px] flex-col overflow-hidden rounded-[14px] border border-zinc-200">
+          <div className="flex h-[180px] flex-col overflow-hidden rounded-[14px] border border-zinc-200">
             <div className="flex items-center justify-between border-b border-zinc-100 px-4 py-2.5">
               <span className="font-mono text-[11px] tracking-[0.04em] text-zinc-500">
-                LOSS  ·  mean squared error
+                LOSS  ·  MSE per epoch  ·  highlighting{" "}
+                <span style={{ color: OPTIMIZER_COLORS[optimizer] }}>
+                  {OPTIMIZER_SHORT[optimizer]}
+                </span>
               </span>
               <span className="font-mono text-[11px] text-zinc-950">
-                final {hasFit ? finalLoss.toFixed(4) : "—"}
+                {isPlaying ? "loss" : "final"} {hasFit ? currentLoss.toFixed(4) : "—"}
               </span>
             </div>
             <div ref={lossBoxRef} className="flex-1">
               <LossCurve
                 width={lossSize.w}
                 height={lossSize.h}
-                trajectory={hasFit ? trajectory : undefined}
+                maxIndex={stepIdx}
+                series={
+                  hasFit
+                    ? (Object.keys(trajectories) as Optimizer[]).map((name) => ({
+                        losses: trajectories[name].losses,
+                        color: OPTIMIZER_COLORS[name],
+                        label: OPTIMIZER_SHORT[name],
+                        highlighted: name === optimizer,
+                        dashed: name === "OLS (closed form)",
+                      }))
+                    : undefined
+                }
               />
             </div>
           </div>
@@ -336,8 +387,87 @@ export function LinearRegressionPlayground() {
           </div>
         </main>
 
-        {/* Right: hyperparameters + math */}
-        <aside className="order-3 flex flex-col gap-[22px] border-zinc-100 p-4 sm:p-6 lg:border-l lg:p-[22px]">
+        {/* Sidebar — first in source order on mobile (below main); placed in
+            the LEFT grid track on desktop via `lg:order-1`. */}
+        <aside className="order-2 flex flex-col gap-[22px] border-zinc-100 p-4 sm:p-6 lg:order-1 lg:border-r lg:p-[22px]">
+          <SidebarSection
+            title={
+              <>
+                Dataset
+                <InfoTooltip {...glossary.dataset} side="right" />
+              </>
+            }
+          >
+            {PICKER.map(({ id, label }) => (
+              <PickerRow
+                key={id}
+                label={label}
+                active={mode === id}
+                onClick={() => setMode(id)}
+              />
+            ))}
+          </SidebarSection>
+
+          {isSketch ? (
+            <SidebarSection title={`Points · n = ${sketchPoints.length}`}>
+              <p className="text-[12px] leading-[1.5] text-zinc-500">
+                Click anywhere on the plot to place a data point. Two or more lets the line fit.
+              </p>
+              <button
+                type="button"
+                onClick={() => setSketchPoints([])}
+                disabled={sketchPoints.length === 0}
+                className="self-start rounded border border-zinc-200 px-2.5 py-1 text-[12px] text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Clear sketch
+              </button>
+            </SidebarSection>
+          ) : (
+            <>
+              <SidebarSection title={`Points · n = ${n}`}>
+                <RangeSlider value={n} min={10} max={100} step={1} onChange={setN} />
+                <ScaleLabel min="10" max="100" />
+              </SidebarSection>
+
+              <SidebarSection
+                title={
+                  <>
+                    Noise
+                    <InfoTooltip {...glossary.noise} side="right" />
+                    {` · σ = ${sigma.toFixed(3)}`}
+                  </>
+                }
+              >
+                <RangeSlider value={sigma} min={0} max={0.5} step={0.005} onChange={setSigma} />
+                <ScaleLabel min="0" max="0.5" />
+              </SidebarSection>
+            </>
+          )}
+
+          <SidebarSection title="Display">
+            <Toggle
+              label={
+                <>
+                  Show residuals
+                  <InfoTooltip {...glossary.residuals} side="right" />
+                </>
+              }
+              on={showResiduals}
+              onChange={setShowResiduals}
+            />
+            <Toggle
+              label={
+                <>
+                  Show confidence band
+                  <InfoTooltip {...glossary.confidenceBand} side="right" />
+                </>
+              }
+              on={showConfBand}
+              onChange={setShowConfBand}
+            />
+            <Toggle label="Show grid" on={showGrid} onChange={setShowGrid} />
+          </SidebarSection>
+
           <SidebarSection
             title={
               <>
@@ -403,7 +533,126 @@ export function LinearRegressionPlayground() {
           </SidebarSection>
         </aside>
       </div>
+      </div>
+
+      <HowItWorks />
     </div>
+  );
+}
+
+function HowItWorks() {
+  return (
+    <section className="border-t border-zinc-100 px-4 py-12 sm:px-8 md:px-14 md:py-16">
+      <div className="mx-auto max-w-[920px]">
+        <div className="font-mono text-[11px] uppercase tracking-[0.08em] text-zinc-500">
+          § How it works
+        </div>
+        <h2 className="mt-2 text-[26px] font-semibold tracking-[-0.02em] sm:text-[30px]">
+          Drawing the line that fits.
+        </h2>
+        <p className="mt-3 max-w-[640px] text-[15px] leading-[1.65] text-zinc-600">
+          Linear regression is the simplest supervised model: assume the relationship between an
+          input <span className="font-mono">x</span> and an output <span className="font-mono">y</span> is
+          a straight line, then find the line that gets closest to every point.
+        </p>
+
+        <ol className="mt-10 grid gap-6 sm:grid-cols-2">
+          <Step
+            n="01"
+            title="Pick a model"
+            body={
+              <>
+                Every prediction takes the same shape:{" "}
+                <span className="font-mono text-zinc-900">ŷ = β₀ + β₁·x</span>. Two numbers — an
+                intercept and a slope — define the entire line. Fitting the model means choosing the
+                pair <span className="font-mono">(β₀, β₁)</span> that best matches the data.
+              </>
+            }
+          />
+          <Step
+            n="02"
+            title="Measure how wrong it is"
+            body={
+              <>
+                For each point, the residual is the gap between the truth{" "}
+                <span className="font-mono">yᵢ</span> and the prediction{" "}
+                <span className="font-mono">ŷᵢ</span>. Square the gaps, average them, and you have{" "}
+                <span className="font-mono">MSE</span> — the loss the line is trying to drive down.
+                Squaring penalises big misses far more than small ones.
+              </>
+            }
+          />
+          <Step
+            n="03"
+            title="Solve it (closed form)"
+            body={
+              <>
+                Because the loss is a clean quadratic in <span className="font-mono">β</span>, calculus
+                gives a one-shot answer: set the derivative to zero and solve. That&apos;s ordinary
+                least squares. No iteration, no learning rate — the optimal line in a single
+                expression.
+              </>
+            }
+          />
+          <Step
+            n="04"
+            title="Or learn it (gradient descent)"
+            body={
+              <>
+                Start with random weights, compute the gradient{" "}
+                <span className="font-mono">∂L/∂β</span>, take a small step downhill, and repeat. Each
+                epoch shrinks the loss curve below the plot. The learning rate controls step size;
+                too big and it diverges, too small and it crawls.
+              </>
+            }
+          />
+        </ol>
+
+        <div className="mt-10 rounded-[14px] border border-zinc-200 bg-stone-50 p-5">
+          <div className="font-mono text-[11px] uppercase tracking-[0.08em] text-zinc-500">
+            What the numbers mean
+          </div>
+          <dl className="mt-3 grid gap-x-8 gap-y-3 text-[14px] leading-[1.55] text-zinc-700 sm:grid-cols-2">
+            <div>
+              <dt className="font-mono text-[12px] text-zinc-900">MSE</dt>
+              <dd>Average squared residual. Lower is better; zero means a perfect fit.</dd>
+            </div>
+            <div>
+              <dt className="font-mono text-[12px] text-zinc-900">R²</dt>
+              <dd>
+                Fraction of variance explained. <span className="font-mono">1.0</span> is perfect,{" "}
+                <span className="font-mono">0</span> is no better than predicting the mean.
+              </dd>
+            </div>
+            <div>
+              <dt className="font-mono text-[12px] text-zinc-900">iter</dt>
+              <dd>How many gradient-descent steps it took to converge within tolerance.</dd>
+            </div>
+            <div>
+              <dt className="font-mono text-[12px] text-zinc-900">Δ loss</dt>
+              <dd>How much the loss fell from the first epoch to the last — a sign of progress.</dd>
+            </div>
+          </dl>
+        </div>
+
+        <p className="mt-8 text-[14px] leading-[1.6] text-zinc-500">
+          Try it: crank the noise up and watch <span className="font-mono">R²</span> collapse. Drop
+          the learning rate to <span className="font-mono">0.001</span> and see the loss curve barely
+          move in 300 epochs. The whole point of the playground is that the math becomes something
+          you can feel.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function Step({ n, title, body }: { n: string; title: string; body: React.ReactNode }) {
+  return (
+    <li className="rounded-[14px] border border-zinc-200 p-5">
+      <div className="font-mono text-[11px] tracking-[0.06em] text-zinc-400">{n}</div>
+      <h3 className="mt-1 text-[17px] font-semibold tracking-[-0.01em] text-zinc-950">{title}</h3>
+      <p className="mt-2 text-[14px] leading-[1.6] text-zinc-600">{body}</p>
+    </li>
   );
 }
 

@@ -50,13 +50,6 @@ export function Header({ active = "Techniques", variant = "light" }: HeaderProps
       </nav>
       <div className="flex shrink-0 items-center gap-2.5 text-[13px]">
         <span className={`hidden font-mono text-xs lg:inline ${muteText}`}>v0.4 · build 318</span>
-        <span
-          className={`hidden rounded-full border px-3.5 py-2 font-medium sm:inline-flex ${
-            dark ? "border-zinc-800" : "border-zinc-200"
-          } ${inkText}`}
-        >
-          Sign in
-        </span>
       </div>
     </header>
   );
