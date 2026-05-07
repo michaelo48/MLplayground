@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Header } from "../../../_components/Header";
 import { InfoTooltip } from "../../../_components/InfoTooltip";
+import { IntroModal, IntroSlide } from "../../../_components/IntroModal";
 import { glossary } from "../../../_lib/glossary";
 import {
   type DatasetId,
@@ -22,7 +23,7 @@ const DATASET_PICKER: { id: DatasetId; label: string }[] = [
   { id: "blobs", label: knnDatasets.blobs.label },
   { id: "moons", label: knnDatasets.moons.label },
   { id: "spiral", label: knnDatasets.spiral.label },
-  { id: "sketch", label: "Sketch your own  +" },
+  { id: "sketch", label: "Draw your own  +" },
 ];
 
 export function KNNPlayground() {
@@ -36,6 +37,7 @@ export function KNNPlayground() {
   const [sketchPoints, setSketchPoints] = useState<LabeledPoint[]>([]);
   const [query, setQuery] = useState({ x: 0.5, y: 0.5 });
   const draggingRef = useRef(false);
+  const [introOpen, setIntroOpen] = useState(true);
 
   const points = useMemo<LabeledPoint[]>(() => {
     if (dataset === "sketch") return sketchPoints;
@@ -293,7 +295,7 @@ export function KNNPlayground() {
 
         <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[400px_1fr]">
           <main className="order-1 flex min-w-0 flex-col gap-[18px] p-4 sm:p-6 lg:order-2 lg:p-7">
-            <div className="flex max-h-[1020px] flex-1 flex-col overflow-hidden rounded-[14px] border border-zinc-200">
+            <div className="flex max-h-[960px] flex-1 flex-col overflow-hidden rounded-[14px] border border-zinc-200">
               <div className="flex items-center justify-between border-b border-zinc-100 px-4 py-3">
                 <span className="font-mono text-[11px] tracking-[0.04em] text-zinc-500">
                   {hasFit
@@ -498,130 +500,80 @@ export function KNNPlayground() {
         </div>
       </div>
 
-      <HowItWorks />
+      <IntroModal
+        open={introOpen}
+        onClose={() => setIntroOpen(false)}
+        kicker="§ k-Nearest Neighbors"
+        title="The lazy classifier."
+        slides={KNN_SLIDES}
+      />
     </div>
   );
 }
 
-// ---------- HowItWorks ----------
+// ---------- Intro modal slides ----------
 
-function HowItWorks() {
-  return (
-    <section className="border-t border-zinc-100 px-4 py-12 sm:px-8 md:px-14 md:py-16">
-      <div className="mx-auto max-w-[920px]">
-        <div className="font-mono text-[11px] uppercase tracking-[0.08em] text-zinc-500">
-          § How it works
-        </div>
-        <h2 className="mt-2 text-[26px] font-semibold tracking-[-0.02em] sm:text-[30px]">
-          The lazy classifier.
-        </h2>
-        <p className="mt-3 max-w-[640px] text-[15px] leading-[1.65] text-zinc-600">
-          k-Nearest Neighbors trains nothing. The &ldquo;model&rdquo; is just the dataset itself —
-          when you ask it to classify a new point, it looks up the{" "}
-          <span className="font-mono">k</span> closest training points and lets them vote.
-        </p>
-
-        <ol className="mt-10 grid gap-6 sm:grid-cols-2">
-          <Step
-            n="01"
-            title="Drop a query point"
-            body={
-              <>
-                The open ring on the canvas is the point being classified. Drag it anywhere — into
-                a cluster, between them, or off in empty space — and the prediction updates live.
-              </>
-            }
-          />
-          <Step
-            n="02"
-            title="Measure distance to every training point"
-            body={
-              <>
-                For each labelled point, compute{" "}
-                <span className="font-mono">d(query, p)</span>. Euclidean is the default;
-                Manhattan distorts the boundary into something more axis-aligned.
-              </>
-            }
-          />
-          <Step
-            n="03"
-            title="Take the closest k"
-            body={
-              <>
-                Sort by distance, keep the first <span className="font-mono">k</span>. Those are
-                the only points that get a vote. Everything else is ignored — even if it&apos;s a
-                hair beyond the cutoff.
-              </>
-            }
-          />
-          <Step
-            n="04"
-            title="Majority vote"
-            body={
-              <>
-                Whichever class shows up most among the <span className="font-mono">k</span> wins.
-                Ties break to the single nearest neighbor (kNN&apos;s default behaviour at{" "}
-                <span className="font-mono">k = 1</span>).
-              </>
-            }
-          />
-        </ol>
-
-        <div className="mt-10 rounded-[14px] border border-zinc-200 bg-stone-50 p-5">
-          <div className="font-mono text-[11px] uppercase tracking-[0.08em] text-zinc-500">
-            What to play with
-          </div>
-          <dl className="mt-3 grid gap-x-8 gap-y-3 text-[14px] leading-[1.55] text-zinc-700 sm:grid-cols-2">
-            <div>
-              <dt className="font-mono text-[12px] text-zinc-900">k = 1</dt>
-              <dd>
-                The boundary hugs every point — a Voronoi diagram. Perfect train accuracy, terrible
-                generalization on noisy data.
-              </dd>
-            </div>
-            <div>
-              <dt className="font-mono text-[12px] text-zinc-900">k → n</dt>
-              <dd>
-                Almost every query gets the majority class regardless of position. The boundary
-                vanishes into a single solid colour.
-              </dd>
-            </div>
-            <div>
-              <dt className="font-mono text-[12px] text-zinc-900">Manhattan distance</dt>
-              <dd>
-                Watch the boundary develop 90° corners — kNN under L¹ prefers axis-aligned
-                neighborhoods.
-              </dd>
-            </div>
-            <div>
-              <dt className="font-mono text-[12px] text-zinc-900">Two moons</dt>
-              <dd>
-                Linear classifiers fail on this dataset. kNN handles it without thinking, because
-                it never assumed a linear boundary in the first place.
-              </dd>
-            </div>
-          </dl>
-        </div>
-
-        <p className="mt-8 text-[14px] leading-[1.6] text-zinc-500">
-          Try it: pick the spirals dataset, set <span className="font-mono">k = 1</span>, and the
-          boundary shatters into shards. Slide <span className="font-mono">k</span> up to 21 and
-          watch the spirals fuse into a smooth blob — the model stops seeing detail.
-        </p>
-      </div>
-    </section>
-  );
-}
-
-function Step({ n, title, body }: { n: string; title: string; body: React.ReactNode }) {
-  return (
-    <li className="rounded-[14px] border border-zinc-200 p-5">
-      <div className="font-mono text-[11px] tracking-[0.06em] text-zinc-400">{n}</div>
-      <h3 className="mt-1 text-[17px] font-semibold tracking-[-0.01em] text-zinc-950">{title}</h3>
-      <p className="mt-2 text-[14px] leading-[1.6] text-zinc-600">{body}</p>
-    </li>
-  );
-}
+const KNN_SLIDES: React.ReactNode[] = [
+  <p key="intro" className="text-[15px] leading-[1.7] text-zinc-700">
+    k-Nearest Neighbors trains nothing. The &ldquo;model&rdquo; is just the dataset itself — when
+    you ask it to classify a new point, it looks up the{" "}
+    <span className="font-mono">k</span> closest training points and lets them vote.
+  </p>,
+  <IntroSlide
+    key="step1"
+    n="01"
+    title="Drop a query point"
+    body={
+      <>
+        The open ring on the canvas is the point being classified. Drag it anywhere — into a
+        cluster, between them, or off in empty space — and the prediction updates live.
+      </>
+    }
+  />,
+  <IntroSlide
+    key="step2"
+    n="02"
+    title="Measure distance to every training point"
+    body={
+      <>
+        For each labelled point, compute{" "}
+        <span className="font-mono">d(query, p)</span>. Euclidean is the default; Manhattan
+        distorts the boundary into something more axis-aligned.
+      </>
+    }
+  />,
+  <IntroSlide
+    key="step3"
+    n="03"
+    title="Take the closest k"
+    body={
+      <>
+        Sort by distance, keep the first <span className="font-mono">k</span>. Those are the only
+        points that get a vote. Everything else is ignored — even if it&apos;s a hair beyond the
+        cutoff.
+      </>
+    }
+  />,
+  <IntroSlide
+    key="step4"
+    n="04"
+    title="Majority vote"
+    body={
+      <>
+        Whichever class shows up most among the <span className="font-mono">k</span> wins. Ties
+        break to the single nearest neighbor (kNN&apos;s default behaviour at{" "}
+        <span className="font-mono">k = 1</span>).
+      </>
+    }
+  />,
+  <div key="try" className="text-[15px] leading-[1.7] text-zinc-700">
+    <p>
+      Try it: pick the spirals dataset, set <span className="font-mono">k = 1</span>, and the
+      boundary shatters into shards. Slide <span className="font-mono">k</span> up to 21 and watch
+      the spirals fuse into a smooth blob — the model stops seeing detail.
+    </p>
+  </div>,
+];
 
 // ---------- Sidebar primitives (mirrors LinearRegressionPlayground) ----------
 

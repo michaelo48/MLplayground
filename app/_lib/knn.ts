@@ -66,9 +66,9 @@ export const knnDatasets: Record<
   Exclude<DatasetId, "sketch">,
   { label: string; generate: (seed: number) => LabeledPoint[] }
 > = {
-  blobs: { label: "Two blobs", generate: generateBlobs },
-  moons: { label: "Two moons", generate: generateMoons },
-  spiral: { label: "Interleaved spirals", generate: generateSpirals },
+  blobs: { label: "Two clusters", generate: generateBlobs },
+  moons: { label: "Two crescents", generate: generateMoons },
+  spiral: { label: "Tangled spirals", generate: generateSpirals },
 };
 
 function clamp01(v: number) {
