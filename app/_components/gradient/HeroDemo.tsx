@@ -1,96 +1,60 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import styles from "../../page.module.css";
+import {
+  type LabeledPoint,
+  knnDatasets,
+  looAccuracy,
+  predictKNN,
+} from "../../_lib/knn";
 
-type Point = { x: number; y: number; c: 0 | 1 };
-type Algo = "knn" | "logistic";
-
-const ACCENT = "oklch(0.62 0.18 250)";
-const WARN = "oklch(0.72 0.16 60)";
-const INK = "#16181c";
+const ACCENT = "oklch(0.62 0.18 250)"; // class A
+const ACCENT_RGBA = "oklch(0.62 0.18 250 / 0.13)";
+const WARN = "oklch(0.72 0.16 60)"; // class B
+const WARN_RGBA = "oklch(0.72 0.16 60 / 0.16)";
 const PAPER = "#fbfaf6";
-
-function dist(ax: number, ay: number, bx: number, by: number) {
-  return Math.hypot(ax - bx, ay - by);
-}
-
-function seedDemoPoints(): Point[] {
-  const pts: Point[] = [];
-  for (let i = 0; i < 18; i++) {
-    pts.push({ x: 0.18 + Math.random() * 0.32, y: 0.55 + Math.random() * 0.30, c: 0 });
-  }
-  for (let i = 0; i < 18; i++) {
-    pts.push({ x: 0.55 + Math.random() * 0.32, y: 0.15 + Math.random() * 0.32, c: 1 });
-  }
-  pts.push({ x: 0.45, y: 0.40, c: 0 });
-  pts.push({ x: 0.55, y: 0.55, c: 1 });
-  return pts;
-}
-
-function predictKNN(points: Point[], x: number, y: number, k: number): -1 | 0 | 1 {
-  if (points.length === 0) return -1;
-  const sorted = points
-    .map((p) => ({ p, d: dist(x, y, p.x, p.y) }))
-    .sort((a, b) => a.d - b.d)
-    .slice(0, Math.min(k, points.length));
-  let c0 = 0, c1 = 0;
-  for (const s of sorted) (s.p.c === 0 ? c0++ : c1++);
-  if (c0 === c1) return sorted[0].p.c;
-  return c0 > c1 ? 0 : 1;
-}
-
-function fitLogistic(points: Point[]): [number, number, number] {
-  if (points.length < 2) return [0, 0, 0];
-  let w0 = 0, w1 = 0, w2 = 0;
-  const lr = 0.5;
-  const n = points.length;
-  for (let iter = 0; iter < 250; iter++) {
-    let g0 = 0, g1 = 0, g2 = 0;
-    for (const p of points) {
-      const z = w0 + w1 * p.x + w2 * p.y;
-      const s = 1 / (1 + Math.exp(-z));
-      const err = s - p.c;
-      g0 += err;
-      g1 += err * p.x;
-      g2 += err * p.y;
-    }
-    w0 -= (lr * g0) / n;
-    w1 -= (lr * g1) / n;
-    w2 -= (lr * g2) / n;
-  }
-  return [w0, w1, w2];
-}
+const CELL = 14;
+const HIT_RADIUS = 0.04; // when a click counts as "on" the query / a point
 
 export function HeroDemo() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const wrapRef = useRef<HTMLDivElement | null>(null);
+  const draggingRef = useRef(false);
 
-  const [points, setPoints] = useState<Point[]>(() => seedDemoPoints());
+  const [seed, setSeed] = useState(7);
+  const [extras, setExtras] = useState<LabeledPoint[]>([]);
   const [activeClass, setActiveClass] = useState<0 | 1>(0);
   const [k, setK] = useState(5);
-  const [algo, setAlgo] = useState<Algo>("knn");
+  const [query, setQuery] = useState({ x: 0.52, y: 0.5 });
 
-  // Logistic weights are derived from points; recompute when the inputs change.
-  const logisticW = algo === "logistic" ? fitLogistic(points) : ([0, 0, 0] as [number, number, number]);
+  // Combine the seeded blobs with anything the user has dropped on top.
+  const points = useMemo<LabeledPoint[]>(
+    () => [...knnDatasets.blobs.generate(seed), ...extras],
+    [seed, extras],
+  );
 
-  function predict(x: number, y: number): -1 | 0 | 1 {
-    if (algo === "knn") return predictKNN(points, x, y, k);
-    if (points.length < 2) return -1;
-    const z = logisticW[0] + logisticW[1] * x + logisticW[2] * y;
-    return 1 / (1 + Math.exp(-z)) >= 0.5 ? 1 : 0;
-  }
+  const effectiveK = Math.min(k, Math.max(1, points.length));
+  const accuracy = useMemo(
+    () => looAccuracy(points, effectiveK, "euclidean"),
+    [points, effectiveK],
+  );
+  const queryResult = useMemo(
+    () => predictKNN(points, query.x, query.y, effectiveK, "euclidean"),
+    [points, query.x, query.y, effectiveK],
+  );
 
-  const accuracy = (() => {
-    if (points.length === 0) return null;
-    let correct = 0;
-    for (const p of points) {
-      if (predict(p.x, p.y) === p.c) correct++;
-    }
-    return correct / points.length;
-  })();
+  // Boundary is expensive (cells × points). Cache it offscreen and only
+  // recompute when the inputs that actually change it change — so dragging the
+  // query never triggers a rebuild.
+  const boundaryCacheRef = useRef<{
+    canvas: HTMLCanvasElement | null;
+    points: LabeledPoint[] | null;
+    k: number;
+    w: number;
+    h: number;
+  }>({ canvas: null, points: null, k: 0, w: 0, h: 0 });
 
-  // Draw whenever state changes; also handle DPR-aware resizing.
   useEffect(() => {
     const canvas = canvasRef.current;
     const wrap = wrapRef.current;
@@ -99,6 +63,41 @@ export function HeroDemo() {
     if (!ctx) return;
 
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+    const ensureBoundary = (w: number, h: number) => {
+      const cache = boundaryCacheRef.current;
+      const fresh =
+        cache.canvas &&
+        cache.points === points &&
+        cache.k === effectiveK &&
+        cache.w === w &&
+        cache.h === h;
+      if (fresh) return cache.canvas;
+
+      const off = cache.canvas ?? document.createElement("canvas");
+      off.width = Math.max(1, Math.round(w * dpr));
+      off.height = Math.max(1, Math.round(h * dpr));
+      const offCtx = off.getContext("2d");
+      if (!offCtx) return null;
+      offCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      offCtx.clearRect(0, 0, w, h);
+      if (points.length >= 2) {
+        const cols = Math.ceil(w / CELL);
+        const rows = Math.ceil(h / CELL);
+        for (let cx = 0; cx < cols; cx++) {
+          for (let cy = 0; cy < rows; cy++) {
+            const px = (cx + 0.5) * CELL;
+            const py = (cy + 0.5) * CELL;
+            const { cls } = predictKNN(points, px / w, py / h, effectiveK, "euclidean");
+            if (cls === -1) continue;
+            offCtx.fillStyle = cls === 0 ? ACCENT_RGBA : WARN_RGBA;
+            offCtx.fillRect(cx * CELL, cy * CELL, CELL, CELL);
+          }
+        }
+      }
+      boundaryCacheRef.current = { canvas: off, points, k: effectiveK, w, h };
+      return off;
+    };
 
     const draw = () => {
       const rect = wrap.getBoundingClientRect();
@@ -111,43 +110,24 @@ export function HeroDemo() {
       const h = rect.height;
       ctx.clearRect(0, 0, w, h);
 
-      // Decision boundary as a coarse cell grid.
-      if (points.length >= 2) {
-        const cell = 14;
-        const cols = Math.ceil(w / cell);
-        const rows = Math.ceil(h / cell);
-        for (let cx = 0; cx < cols; cx++) {
-          for (let cy = 0; cy < rows; cy++) {
-            const px = (cx + 0.5) * cell;
-            const py = (cy + 0.5) * cell;
-            const cls = predict(px / w, py / h);
-            if (cls === -1) continue;
-            ctx.fillStyle =
-              cls === 0
-                ? "oklch(0.62 0.18 250 / 0.13)"
-                : "oklch(0.72 0.16 60 / 0.16)";
-            ctx.fillRect(cx * cell, cy * cell, cell, cell);
-          }
-        }
-      }
+      const off = ensureBoundary(w, h);
+      if (off) ctx.drawImage(off, 0, 0, w, h);
 
-      // Logistic decision line on top of the cells, for crispness.
-      if (algo === "logistic" && points.length >= 2) {
-        const [w0, w1, w2] = logisticW;
-        if (Math.abs(w2) > 1e-6) {
-          const yL = -(w0 + w1 * 0) / w2;
-          const yR = -(w0 + w1 * 1) / w2;
-          ctx.strokeStyle = INK;
-          ctx.lineWidth = 1.5;
-          ctx.setLineDash([5, 4]);
+      // Dashed lines from query to its k closest neighbors.
+      if (queryResult.neighbors.length > 0) {
+        ctx.strokeStyle = "rgba(22, 24, 28, 0.45)";
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 3]);
+        for (const nb of queryResult.neighbors) {
           ctx.beginPath();
-          ctx.moveTo(0, yL * h);
-          ctx.lineTo(w, yR * h);
+          ctx.moveTo(query.x * w, query.y * h);
+          ctx.lineTo(nb.x * w, nb.y * h);
           ctx.stroke();
-          ctx.setLineDash([]);
         }
+        ctx.setLineDash([]);
       }
 
+      // Training points.
       for (const p of points) {
         ctx.beginPath();
         ctx.arc(p.x * w, p.y * h, 6.5, 0, Math.PI * 2);
@@ -157,37 +137,87 @@ export function HeroDemo() {
         ctx.lineWidth = 2;
         ctx.stroke();
       }
+
+      // Highlight ring around each chosen neighbor.
+      for (const nb of queryResult.neighbors) {
+        ctx.beginPath();
+        ctx.arc(nb.x * w, nb.y * h, 10, 0, Math.PI * 2);
+        ctx.strokeStyle = nb.c === 0 ? ACCENT : WARN;
+        ctx.lineWidth = 1.6;
+        ctx.stroke();
+      }
+
+      // Query marker — open ring colored by predicted class, with a crosshair.
+      ctx.beginPath();
+      ctx.arc(query.x * w, query.y * h, 10, 0, Math.PI * 2);
+      ctx.fillStyle = PAPER;
+      ctx.fill();
+      ctx.strokeStyle =
+        queryResult.cls === 0 ? ACCENT : queryResult.cls === 1 ? WARN : "#9ca3af";
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+      ctx.strokeStyle = "rgba(22, 24, 28, 0.4)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(query.x * w - 4, query.y * h);
+      ctx.lineTo(query.x * w + 4, query.y * h);
+      ctx.moveTo(query.x * w, query.y * h - 4);
+      ctx.lineTo(query.x * w, query.y * h + 4);
+      ctx.stroke();
     };
 
     draw();
     const ro = new ResizeObserver(draw);
     ro.observe(wrap);
     return () => ro.disconnect();
-  }, [points, k, algo, logisticW]);
+  }, [points, effectiveK, query, queryResult]);
 
-  const onCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const rect = (e.target as HTMLCanvasElement).getBoundingClientRect();
+  const onPointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
     const x = (e.clientX - rect.left) / rect.width;
     const y = (e.clientY - rect.top) / rect.height;
+
     if (e.shiftKey) {
-      setPoints((pts) => {
-        let best = -1;
-        let bestD = 0.03;
-        for (let i = 0; i < pts.length; i++) {
-          const d = dist(x, y, pts[i].x, pts[i].y);
-          if (d < bestD) {
-            bestD = d;
-            best = i;
-          }
+      // Shift+click — remove the nearest point if within radius, else drop a
+      // new one of the active class.
+      let bestIdx = -1;
+      let bestD = HIT_RADIUS;
+      for (let i = 0; i < extras.length; i++) {
+        const d = Math.hypot(x - extras[i].x, y - extras[i].y);
+        if (d < bestD) {
+          bestD = d;
+          bestIdx = i;
         }
-        if (best < 0) return pts;
-        const next = pts.slice();
-        next.splice(best, 1);
-        return next;
-      });
-    } else {
-      setPoints((pts) => [...pts, { x, y, c: activeClass }]);
+      }
+      if (bestIdx >= 0) {
+        setExtras((pts) => pts.slice(0, bestIdx).concat(pts.slice(bestIdx + 1)));
+      } else {
+        setExtras((pts) => [...pts, { x, y, c: activeClass }]);
+      }
+      return;
     }
+
+    // Plain click anywhere → move the query and start dragging.
+    setQuery({ x, y });
+    draggingRef.current = true;
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+
+  const onPointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!draggingRef.current) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const y = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+    setQuery({ x, y });
+  };
+
+  const onPointerUp = () => {
+    draggingRef.current = false;
+  };
+
+  const reshuffle = () => {
+    setExtras([]);
+    setSeed((s) => s + 1);
   };
 
   return (
@@ -195,41 +225,46 @@ export function HeroDemo() {
       <div className={styles.demoHead}>
         <div className={styles.demoTitle}>
           <span className={styles.demoPill}>LIVE</span>
-          Lesson 03 · Classification boundaries
+          Lesson 03 · k-NN, by hand
         </div>
       </div>
       <div className={styles.demoBody}>
         <div ref={wrapRef} className={styles.demoCanvasWrap}>
           <div className={styles.canvasOverlay}>
-            <div>x ∈ [0, 1] · y ∈ [0, 1]</div>
             <div>
-              {points.length} point{points.length !== 1 ? "s" : ""} · 2 classes
+              query · ({query.x.toFixed(2)}, {query.y.toFixed(2)}) →{" "}
+              <span
+                style={{
+                  color:
+                    queryResult.cls === 0
+                      ? ACCENT
+                      : queryResult.cls === 1
+                      ? WARN
+                      : undefined,
+                }}
+              >
+                {queryResult.cls === 0
+                  ? "A"
+                  : queryResult.cls === 1
+                  ? "B"
+                  : "—"}
+              </span>
+            </div>
+            <div>
+              {points.length} pts · k = {effectiveK}
             </div>
           </div>
-          <canvas ref={canvasRef} className={styles.canvas} onMouseDown={onCanvasMouseDown} />
-          <div className={styles.canvasHelp}>click to drop · shift+click to remove</div>
+          <canvas
+            ref={canvasRef}
+            className={styles.canvas}
+            style={{ touchAction: "none", cursor: "pointer" }}
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            onPointerCancel={onPointerUp}
+          />
         </div>
         <aside className={styles.demoSide}>
-          <div className={styles.sideSection}>
-            <div className={styles.label}>Algorithm</div>
-            <div className={styles.algoTabs}>
-              <button
-                className={`${styles.algoTab} ${algo === "knn" ? styles.active : ""}`}
-                onClick={() => setAlgo("knn")}
-              >
-                <span>k-NN</span>
-                <span className={styles.sub}>Distance based</span>
-              </button>
-              <button
-                className={`${styles.algoTab} ${algo === "logistic" ? styles.active : ""}`}
-                onClick={() => setAlgo("logistic")}
-              >
-                <span>Logistic</span>
-                <span className={styles.sub}>Linear</span>
-              </button>
-            </div>
-          </div>
-
           <div className={styles.sideSection}>
             <div className={styles.label}>Drop class</div>
             <div className={styles.classPick}>
@@ -248,15 +283,19 @@ export function HeroDemo() {
             </div>
           </div>
 
-          <div
-            className={`${styles.sideSection} ${styles.kSection} ${algo !== "knn" ? styles.disabled : ""}`}
-          >
+          <div className={`${styles.sideSection} ${styles.kSection}`}>
             <div className={styles.sliderRow}>
               <div className={styles.top}>
                 <span className={styles.name}>
-                  Neighbors <span className={styles.mono} style={{ color: "var(--ink-3)", fontSize: 11 }}>k</span>
+                  Neighbors{" "}
+                  <span
+                    className={styles.mono}
+                    style={{ color: "var(--ink-3)", fontSize: 11 }}
+                  >
+                    k
+                  </span>
                 </span>
-                <span className={`${styles.val} ${styles.mono}`}>{k}</span>
+                <span className={`${styles.val} ${styles.mono}`}>{effectiveK}</span>
               </div>
               <input
                 type="range"
@@ -270,24 +309,54 @@ export function HeroDemo() {
           </div>
 
           <div className={styles.sideSection}>
+            <div className={styles.label}>Query prediction</div>
+            <div className={styles.metric}>
+              <div
+                className={`${styles.v} ${styles.tabular}`}
+                style={{
+                  color:
+                    queryResult.cls === 0
+                      ? ACCENT
+                      : queryResult.cls === 1
+                      ? WARN
+                      : undefined,
+                }}
+              >
+                {queryResult.cls === 0
+                  ? "Class A"
+                  : queryResult.cls === 1
+                  ? "Class B"
+                  : "—"}
+              </div>
+              <div className={styles.l}>
+                from {queryResult.neighbors.length} nearest neighbor
+                {queryResult.neighbors.length !== 1 ? "s" : ""}
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.sideSection}>
             <div className={styles.label}>Train accuracy</div>
             <div className={styles.metric}>
               <div className={`${styles.v} ${styles.tabular}`}>
                 {accuracy === null ? "— %" : `${(accuracy * 100).toFixed(0)}%`}
               </div>
-              <div className={styles.l}>on dropped points</div>
+              <div className={styles.l}>leave-one-out</div>
             </div>
           </div>
 
           <div className={styles.sideActions}>
-            <button className={styles.miniBtn} onClick={() => setPoints([])}>
-              Clear all
+            <button className={styles.miniBtn} onClick={() => setExtras([])}>
+              Clear extras
             </button>
-            <button className={styles.miniBtn} onClick={() => setPoints(seedDemoPoints())}>
-              Demo data
+            <button className={styles.miniBtn} onClick={reshuffle}>
+              Reshuffle
             </button>
           </div>
         </aside>
+      </div>
+      <div className={styles.canvasHelp}>
+        drag to move the query · shift+click to drop / remove a point
       </div>
     </div>
   );
