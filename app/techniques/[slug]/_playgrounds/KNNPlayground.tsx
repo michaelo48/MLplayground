@@ -59,6 +59,18 @@ export function KNNPlayground() {
   // ----- Canvas drawing -----
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const wrapRef = useRef<HTMLDivElement | null>(null);
+  // Boundary is expensive (cells × points), so render it once into an offscreen
+  // canvas keyed on its inputs and blit it back on every frame. This decouples
+  // the per-frame cost from the boundary's size, keeping query drag smooth.
+  const boundaryCacheRef = useRef<{
+    canvas: HTMLCanvasElement | null;
+    points: LabeledPoint[] | null;
+    k: number;
+    metric: DistanceMetric;
+    show: boolean;
+    w: number;
+    h: number;
+  }>({ canvas: null, points: null, k: 0, metric: "euclidean", show: false, w: 0, h: 0 });
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -68,6 +80,52 @@ export function KNNPlayground() {
     if (!ctx) return;
 
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+    const ensureBoundary = (w: number, h: number) => {
+      const cache = boundaryCacheRef.current;
+      const fresh =
+        cache.canvas &&
+        cache.points === points &&
+        cache.k === effectiveK &&
+        cache.metric === metric &&
+        cache.show === showBoundary &&
+        cache.w === w &&
+        cache.h === h;
+      if (fresh) return cache.canvas;
+
+      const off = cache.canvas ?? document.createElement("canvas");
+      off.width = Math.max(1, Math.round(w * dpr));
+      off.height = Math.max(1, Math.round(h * dpr));
+      const offCtx = off.getContext("2d");
+      if (!offCtx) return null;
+      offCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      offCtx.clearRect(0, 0, w, h);
+      if (showBoundary && points.length >= 1) {
+        const cols = Math.ceil(w / CELL);
+        const rows = Math.ceil(h / CELL);
+        for (let cx = 0; cx < cols; cx++) {
+          for (let cy = 0; cy < rows; cy++) {
+            const px = (cx + 0.5) * CELL;
+            const py = (cy + 0.5) * CELL;
+            const { cls } = predictKNN(points, px / w, py / h, effectiveK, metric);
+            if (cls === -1) continue;
+            offCtx.fillStyle =
+              cls === 0 ? "rgba(124, 58, 237, 0.10)" : "rgba(234, 88, 12, 0.10)";
+            offCtx.fillRect(cx * CELL, cy * CELL, CELL, CELL);
+          }
+        }
+      }
+      boundaryCacheRef.current = {
+        canvas: off,
+        points,
+        k: effectiveK,
+        metric,
+        show: showBoundary,
+        w,
+        h,
+      };
+      return off;
+    };
 
     const draw = () => {
       const rect = wrap.getBoundingClientRect();
@@ -82,22 +140,9 @@ export function KNNPlayground() {
       ctx.fillStyle = "#fff";
       ctx.fillRect(0, 0, w, h);
 
-      // Decision boundary as a coarse cell grid.
-      if (showBoundary && points.length >= 1) {
-        const cols = Math.ceil(w / CELL);
-        const rows = Math.ceil(h / CELL);
-        for (let cx = 0; cx < cols; cx++) {
-          for (let cy = 0; cy < rows; cy++) {
-            const px = (cx + 0.5) * CELL;
-            const py = (cy + 0.5) * CELL;
-            const { cls } = predictKNN(points, px / w, py / h, effectiveK, metric);
-            if (cls === -1) continue;
-            ctx.fillStyle =
-              cls === 0 ? "rgba(124, 58, 237, 0.10)" : "rgba(234, 88, 12, 0.10)";
-            ctx.fillRect(cx * CELL, cy * CELL, CELL, CELL);
-          }
-        }
-      }
+      // Boundary: cached, blit at logical-pixel size.
+      const off = ensureBoundary(w, h);
+      if (off && showBoundary) ctx.drawImage(off, 0, 0, w, h);
 
       // Neighbor links (dashed) from query point to its k closest.
       if (showNeighbors && queryResult.neighbors.length > 0) {
@@ -248,7 +293,7 @@ export function KNNPlayground() {
 
         <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[400px_1fr]">
           <main className="order-1 flex min-w-0 flex-col gap-[18px] p-4 sm:p-6 lg:order-2 lg:p-7">
-            <div className="flex flex-1 flex-col overflow-hidden rounded-[14px] border border-zinc-200">
+            <div className="flex max-h-[1020px] flex-1 flex-col overflow-hidden rounded-[14px] border border-zinc-200">
               <div className="flex items-center justify-between border-b border-zinc-100 px-4 py-3">
                 <span className="font-mono text-[11px] tracking-[0.04em] text-zinc-500">
                   {hasFit
@@ -279,7 +324,7 @@ export function KNNPlayground() {
                   </span>
                 </div>
               </div>
-              <div ref={wrapRef} className="relative min-h-[360px] flex-1">
+              <div ref={wrapRef} className="relative min-h-[320px] flex-1">
                 <canvas
                   ref={canvasRef}
                   className={`block h-full w-full touch-none ${
@@ -381,12 +426,12 @@ export function KNNPlayground() {
               <RangeSlider
                 value={k}
                 min={1}
-                max={Math.max(1, Math.min(21, points.length || 21))}
+                max={21}
                 step={2}
                 onChange={setK}
                 accent
               />
-              <ScaleLabel min="1" max={String(Math.max(1, Math.min(21, points.length || 21)))} />
+              <ScaleLabel min="1" max="21" />
               <p className="text-[11px] leading-[1.5] text-zinc-500">
                 Odd values avoid ties.{" "}
                 <span className="font-mono">
@@ -644,7 +689,8 @@ function RangeSlider({
     const stepped = step ? Math.round(raw / step) * step : raw;
     onChange(Math.max(min, Math.min(max, stepped)));
   };
-  const pct = ((value - min) / (max - min)) * 100;
+  const range = max - min || 1;
+  const pct = Math.max(0, Math.min(100, ((value - min) / range) * 100));
   return (
     <div
       ref={trackRef}
