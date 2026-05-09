@@ -8,7 +8,7 @@ import {
   type Technique,
 } from "../_lib/techniques";
 
-const families: Family[] = ["Supervised", "Unsupervised", "Neural"];
+const families: Family[] = ["Supervised", "Unsupervised"];
 
 export default function TechniquesIndex() {
   return (
@@ -17,7 +17,7 @@ export default function TechniquesIndex() {
 
       <section className="px-4 pt-10 sm:px-8 md:px-14 md:pt-12">
         <div className="font-mono text-xs uppercase tracking-[0.06em] text-zinc-500">
-          Browse · 6 techniques · 3 families
+          Browse · 5 techniques · 2 families
         </div>
         <h1 className="mt-3.5 text-[36px] font-semibold leading-[1.02] tracking-[-0.03em] sm:text-[44px] lg:text-[56px]">
           The full catalog.
@@ -29,10 +29,9 @@ export default function TechniquesIndex() {
 
         <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 pb-3.5">
           <div className="flex flex-wrap gap-2">
-            <span className="pill pill-solid">All · 6</span>
+            <span className="pill pill-solid">All · 5</span>
             <span className="pill pill-supervised">Supervised · 3</span>
             <span className="pill pill-unsupervised">Unsupervised · 2</span>
-            <span className="pill pill-neural">Neural · 1</span>
           </div>
           <div className="flex flex-wrap gap-[22px] font-mono text-xs text-zinc-500">
             <span>sort: family ↓</span>

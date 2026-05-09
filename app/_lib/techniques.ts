@@ -44,19 +44,11 @@ export const techniques: Technique[] = [
     blurb: "Rotate a high-dimensional cloud into the directions that matter most.",
     meta: "dim. reduction · 6 min",
   },
-  {
-    slug: "neural-networks",
-    name: "Neural Networks",
-    family: "Neural",
-    blurb: "Sketch a dataset, choose a few layers, and watch backprop carve a decision boundary.",
-    meta: "deep learning · 8 min",
-  },
 ];
 
 export const familyDescriptions: Record<Family, string> = {
   Supervised: "labeled inputs → predicted output",
   Unsupervised: "find structure in unlabeled data",
-  Neural: "learned representations via gradient descent",
 };
 
 export function techniqueBySlug(slug: string) {

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { type ReactNode, useState } from "react";
 import styles from "../../page.module.css";
 
-export type Family = "all" | "supervised" | "unsupervised" | "neural";
+export type Family = "all" | "supervised" | "unsupervised";
 
 export type CardData = {
   slug: string | null; // null = no link (e.g. CTA card)

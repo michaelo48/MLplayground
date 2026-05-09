@@ -1,9 +1,8 @@
-export type Family = "Supervised" | "Unsupervised" | "Neural";
+export type Family = "Supervised" | "Unsupervised";
 
 const map: Record<Family, string> = {
   Supervised: "pill-supervised",
   Unsupervised: "pill-unsupervised",
-  Neural: "pill-neural",
 };
 
 export function FamilyPill({ family }: { family: Family }) {

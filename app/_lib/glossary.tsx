@@ -115,4 +115,34 @@ export const glossary: Record<string, Entry> = {
     definition:
       "For each training point, predict its class using all the others. Honest because using a point to predict itself would always score 100% at k = 1.",
   },
+  centroid: {
+    term: "Centroid",
+    definition:
+      "The mean position of all points currently assigned to a cluster. K-means alternates between assigning points to the nearest centroid and moving each centroid to the mean of its assigned points.",
+  },
+  inertia: {
+    term: "Inertia · within-cluster sum of squares",
+    definition:
+      "The sum of squared distances from each point to its assigned centroid. K-means tries to minimize this — every assignment and update step is guaranteed to lower it (or leave it unchanged).",
+  },
+  kmeansK: {
+    term: "k · clusters",
+    definition: (
+      <>
+        <p className="mb-2">
+          The number of clusters to find. Unlike kNN this is a structural choice — k-means
+          will always find <em>exactly</em> k groups, even if the data has fewer (or more) natural
+          ones.
+        </p>
+        <p className="text-zinc-600">
+          Common heuristics: the elbow plot of inertia vs k, or the silhouette score.
+        </p>
+      </>
+    ),
+  },
+  lloyds: {
+    term: "Lloyd's algorithm",
+    definition:
+      "The standard procedure for k-means: pick initial centroids → assign each point to its nearest centroid → move each centroid to the mean of its assignees → repeat until assignments stop changing.",
+  },
 };

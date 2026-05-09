@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Header } from "../../../_components/Header";
 import { InfoTooltip } from "../../../_components/InfoTooltip";
+import { IntroModal, IntroSlide } from "../../../_components/IntroModal";
 import { RegressionPlot } from "../../../_components/plots/RegressionPlot";
 import { LossCurve } from "../../../_components/plots/LossCurve";
 import { glossary } from "../../../_lib/glossary";
@@ -64,6 +65,7 @@ const PICKER: Array<{ id: Mode; label: string }> = [
 ];
 
 export function LinearRegressionPlayground() {
+  const [introOpen, setIntroOpen] = useState(true);
   const [mode, setMode] = useState<Mode>(DEFAULTS.mode);
   const [n, setN] = useState(DEFAULTS.n);
   const [sigma, setSigma] = useState(DEFAULTS.sigma);
@@ -109,13 +111,16 @@ export function LinearRegressionPlayground() {
     };
   }, []);
 
-  useEffect(() => {
+  // Cancel any in-flight playback and clear playStep. Called from each
+  // handler that mutates an input the playback depends on, instead of using
+  // an effect — keeps reset side effects out of render.
+  const resetPlayback = () => {
     if (rafRef.current !== null) {
       cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
     }
     setPlayStep(null);
-  }, [points, lr, epochs, optimizer]);
+  };
 
   const runAnimation = () => {
     if (!hasFit) return;
@@ -166,6 +171,7 @@ export function LinearRegressionPlayground() {
     // so a click at (relX, relY) maps directly into [0,1].
     const x = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
     const y = Math.max(0, Math.min(1, 1 - (e.clientY - r.top) / r.height));
+    resetPlayback();
     setSketchPoints((p) => [...p, { x, y }]);
   };
 
@@ -185,13 +191,22 @@ export function LinearRegressionPlayground() {
           <h1 className="text-[28px] font-semibold tracking-[-0.025em] sm:text-[32px] lg:text-[38px]">
             Linear Regression
           </h1>
-          <button
-            onClick={runAnimation}
-            disabled={!hasFit || isPlaying}
-            className="pill pill-solid hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            {isPlaying ? `Running… ${safeIdx}/${epochs}` : "Run ▶"}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setIntroOpen(true)}
+              className="pill pill-outline hover:bg-zinc-50"
+              type="button"
+            >
+              ⓘ Intro
+            </button>
+            <button
+              onClick={runAnimation}
+              disabled={!hasFit || isPlaying}
+              className="pill pill-solid hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {isPlaying ? `Running… ${safeIdx}/${epochs}` : "Run ▶"}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -403,7 +418,10 @@ export function LinearRegressionPlayground() {
                 key={id}
                 label={label}
                 active={mode === id}
-                onClick={() => setMode(id)}
+                onClick={() => {
+                  resetPlayback();
+                  setMode(id);
+                }}
               />
             ))}
           </SidebarSection>
@@ -415,7 +433,10 @@ export function LinearRegressionPlayground() {
               </p>
               <button
                 type="button"
-                onClick={() => setSketchPoints([])}
+                onClick={() => {
+                  resetPlayback();
+                  setSketchPoints([]);
+                }}
                 disabled={sketchPoints.length === 0}
                 className="self-start rounded border border-zinc-200 px-2.5 py-1 text-[12px] text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40"
               >
@@ -425,7 +446,16 @@ export function LinearRegressionPlayground() {
           ) : (
             <>
               <SidebarSection title={`Points · n = ${n}`}>
-                <RangeSlider value={n} min={10} max={100} step={1} onChange={setN} />
+                <RangeSlider
+                  value={n}
+                  min={10}
+                  max={100}
+                  step={1}
+                  onChange={(v) => {
+                    resetPlayback();
+                    setN(v);
+                  }}
+                />
                 <ScaleLabel min="10" max="100" />
               </SidebarSection>
 
@@ -438,7 +468,16 @@ export function LinearRegressionPlayground() {
                   </>
                 }
               >
-                <RangeSlider value={sigma} min={0} max={0.5} step={0.005} onChange={setSigma} />
+                <RangeSlider
+                  value={sigma}
+                  min={0}
+                  max={0.5}
+                  step={0.005}
+                  onChange={(v) => {
+                    resetPlayback();
+                    setSigma(v);
+                  }}
+                />
                 <ScaleLabel min="0" max="0.5" />
               </SidebarSection>
             </>
@@ -483,7 +522,10 @@ export function LinearRegressionPlayground() {
                   return (
                     <button
                       key={label}
-                      onClick={() => setOptimizer(label)}
+                      onClick={() => {
+                        resetPlayback();
+                        setOptimizer(label);
+                      }}
                       className={`pill justify-center px-2 py-1.5 text-[11.5px] ${
                         active ? "pill-solid" : "pill-outline hover:bg-zinc-50"
                       }`}
@@ -505,7 +547,17 @@ export function LinearRegressionPlayground() {
               </>
             }
           >
-            <RangeSlider value={lr} min={0.001} max={0.5} step={0.001} onChange={setLr} accent />
+            <RangeSlider
+              value={lr}
+              min={0.001}
+              max={0.5}
+              step={0.001}
+              onChange={(v) => {
+                resetPlayback();
+                setLr(v);
+              }}
+              accent
+            />
             <ScaleLabel min="0.001" max="0.5" />
           </SidebarSection>
 
@@ -518,7 +570,17 @@ export function LinearRegressionPlayground() {
               </>
             }
           >
-            <RangeSlider value={epochs} min={50} max={1000} step={10} onChange={setEpochs} accent />
+            <RangeSlider
+              value={epochs}
+              min={50}
+              max={1000}
+              step={10}
+              onChange={(v) => {
+                resetPlayback();
+                setEpochs(v);
+              }}
+              accent
+            />
             <ScaleLabel min="50" max="1000" />
           </SidebarSection>
 
@@ -535,126 +597,174 @@ export function LinearRegressionPlayground() {
       </div>
       </div>
 
-      <HowItWorks />
+      <IntroModal
+        open={introOpen}
+        onClose={() => setIntroOpen(false)}
+        kicker="§ Linear Regression"
+        title="Drawing the line that fits."
+        slides={LR_SLIDES}
+      />
     </div>
   );
 }
 
-function HowItWorks() {
+// Sample points reused across the LR illustrations so the same scatter shape
+// shows in every step (point → residual → fit → descent).
+const LR_DEMO_POINTS: [number, number][] = [
+  [40, 110], [70, 95], [95, 105], [125, 85], [155, 75],
+  [185, 70], [215, 55], [245, 60], [275, 40], [300, 35],
+];
+
+function IllustModel() {
   return (
-    <section className="border-t border-zinc-100 px-4 py-12 sm:px-8 md:px-14 md:py-16">
-      <div className="mx-auto max-w-[920px]">
-        <div className="font-mono text-[11px] uppercase tracking-[0.08em] text-zinc-500">
-          § How it works
-        </div>
-        <h2 className="mt-2 text-[26px] font-semibold tracking-[-0.02em] sm:text-[30px]">
-          Drawing the line that fits.
-        </h2>
-        <p className="mt-3 max-w-[640px] text-[15px] leading-[1.65] text-zinc-600">
-          Linear regression is the simplest supervised model: assume the relationship between an
-          input <span className="font-mono">x</span> and an output <span className="font-mono">y</span> is
-          a straight line, then find the line that gets closest to every point.
-        </p>
-
-        <ol className="mt-10 grid gap-6 sm:grid-cols-2">
-          <Step
-            n="01"
-            title="Pick a model"
-            body={
-              <>
-                Every prediction takes the same shape:{" "}
-                <span className="font-mono text-zinc-900">ŷ = β₀ + β₁·x</span>. Two numbers — an
-                intercept and a slope — define the entire line. Fitting the model means choosing the
-                pair <span className="font-mono">(β₀, β₁)</span> that best matches the data.
-              </>
-            }
-          />
-          <Step
-            n="02"
-            title="Measure how wrong it is"
-            body={
-              <>
-                For each point, the residual is the gap between the truth{" "}
-                <span className="font-mono">yᵢ</span> and the prediction{" "}
-                <span className="font-mono">ŷᵢ</span>. Square the gaps, average them, and you have{" "}
-                <span className="font-mono">MSE</span> — the loss the line is trying to drive down.
-                Squaring penalises big misses far more than small ones.
-              </>
-            }
-          />
-          <Step
-            n="03"
-            title="Solve it (closed form)"
-            body={
-              <>
-                Because the loss is a clean quadratic in <span className="font-mono">β</span>, calculus
-                gives a one-shot answer: set the derivative to zero and solve. That&apos;s ordinary
-                least squares. No iteration, no learning rate — the optimal line in a single
-                expression.
-              </>
-            }
-          />
-          <Step
-            n="04"
-            title="Or learn it (gradient descent)"
-            body={
-              <>
-                Start with random weights, compute the gradient{" "}
-                <span className="font-mono">∂L/∂β</span>, take a small step downhill, and repeat. Each
-                epoch shrinks the loss curve below the plot. The learning rate controls step size;
-                too big and it diverges, too small and it crawls.
-              </>
-            }
-          />
-        </ol>
-
-        <div className="mt-10 rounded-[14px] border border-zinc-200 bg-stone-50 p-5">
-          <div className="font-mono text-[11px] uppercase tracking-[0.08em] text-zinc-500">
-            What the numbers mean
-          </div>
-          <dl className="mt-3 grid gap-x-8 gap-y-3 text-[14px] leading-[1.55] text-zinc-700 sm:grid-cols-2">
-            <div>
-              <dt className="font-mono text-[12px] text-zinc-900">MSE</dt>
-              <dd>Average squared residual. Lower is better; zero means a perfect fit.</dd>
-            </div>
-            <div>
-              <dt className="font-mono text-[12px] text-zinc-900">R²</dt>
-              <dd>
-                Fraction of variance explained. <span className="font-mono">1.0</span> is perfect,{" "}
-                <span className="font-mono">0</span> is no better than predicting the mean.
-              </dd>
-            </div>
-            <div>
-              <dt className="font-mono text-[12px] text-zinc-900">iter</dt>
-              <dd>How many gradient-descent steps it took to converge within tolerance.</dd>
-            </div>
-            <div>
-              <dt className="font-mono text-[12px] text-zinc-900">Δ loss</dt>
-              <dd>How much the loss fell from the first epoch to the last — a sign of progress.</dd>
-            </div>
-          </dl>
-        </div>
-
-        <p className="mt-8 text-[14px] leading-[1.6] text-zinc-500">
-          Try it: crank the noise up and watch <span className="font-mono">R²</span> collapse. Drop
-          the learning rate to <span className="font-mono">0.001</span> and see the loss curve barely
-          move in 300 epochs. The whole point of the playground is that the math becomes something
-          you can feel.
-        </p>
-      </div>
-    </section>
+    <svg viewBox="0 0 320 130" className="block h-auto w-full" aria-hidden>
+      <g stroke="#e4e4e7" strokeWidth="0.5">
+        {[60, 100, 140, 180, 220, 260, 300].map((x) => (
+          <line key={x} x1={x} x2={x} y1={20} y2={115} />
+        ))}
+        {[40, 60, 80, 100].map((y) => (
+          <line key={y} x1={20} x2={310} y1={y} y2={y} />
+        ))}
+      </g>
+      <line x1="20" y1="115" x2="310" y2="115" stroke="#71717a" strokeWidth="1" />
+      <line x1="20" y1="20" x2="20" y2="115" stroke="#71717a" strokeWidth="1" />
+      <line x1="20" y1="105" x2="310" y2="35" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" />
+      <text x="160" y="58" fontSize="11" fill="#7c3aed" fontFamily="ui-monospace, monospace">
+        ŷ = β₀ + β₁·x
+      </text>
+    </svg>
   );
 }
 
-function Step({ n, title, body }: { n: string; title: string; body: React.ReactNode }) {
+function IllustResiduals() {
+  // Approximate fit line for the demo points.
+  const m = -0.27, b = 120;
   return (
-    <li className="rounded-[14px] border border-zinc-200 p-5">
-      <div className="font-mono text-[11px] tracking-[0.06em] text-zinc-400">{n}</div>
-      <h3 className="mt-1 text-[17px] font-semibold tracking-[-0.01em] text-zinc-950">{title}</h3>
-      <p className="mt-2 text-[14px] leading-[1.6] text-zinc-600">{body}</p>
-    </li>
+    <svg viewBox="0 0 320 130" className="block h-auto w-full" aria-hidden>
+      <line x1="20" y1="115" x2="310" y2="115" stroke="#71717a" strokeWidth="1" />
+      <line x1="20" y1="20" x2="20" y2="115" stroke="#71717a" strokeWidth="1" />
+      <line x1="20" y1={m * 20 + b} x2="310" y2={m * 310 + b} stroke="#7c3aed" strokeWidth="2" />
+      {LR_DEMO_POINTS.map(([x, y], i) => (
+        <line key={`r${i}`} x1={x} y1={y} x2={x} y2={m * x + b} stroke="#7c3aed" strokeWidth="1" strokeDasharray="2 2" />
+      ))}
+      {LR_DEMO_POINTS.map(([x, y], i) => (
+        <circle key={i} cx={x} cy={y} r={3} fill="#0a0a0a" />
+      ))}
+    </svg>
   );
 }
+
+function IllustClosedForm() {
+  const m = -0.27, b = 120;
+  return (
+    <svg viewBox="0 0 320 130" className="block h-auto w-full" aria-hidden>
+      <line x1="20" y1="115" x2="310" y2="115" stroke="#71717a" strokeWidth="1" />
+      <line x1="20" y1="20" x2="20" y2="115" stroke="#71717a" strokeWidth="1" />
+      <line x1="20" y1={m * 20 + b} x2="310" y2={m * 310 + b} stroke="#7c3aed" strokeWidth="2.5" />
+      {LR_DEMO_POINTS.map(([x, y], i) => (
+        <circle key={i} cx={x} cy={y} r={3} fill="#0a0a0a" />
+      ))}
+      <text x="200" y="44" fontSize="11" fill="#16a34a" fontFamily="ui-monospace, monospace">
+        ✓ ∂L/∂β = 0
+      </text>
+    </svg>
+  );
+}
+
+function IllustGradientDescent() {
+  // Loss landscape (parabola) with three "ball" markers walking downhill.
+  return (
+    <svg viewBox="0 0 320 130" className="block h-auto w-full" aria-hidden>
+      <line x1="20" y1="115" x2="310" y2="115" stroke="#71717a" strokeWidth="1" />
+      <line x1="20" y1="20" x2="20" y2="115" stroke="#71717a" strokeWidth="1" />
+      {/* Loss curve as a smooth bowl. */}
+      <path d="M 30 30 Q 165 200 300 30" fill="none" stroke="#a1a1aa" strokeWidth="1.5" />
+      {/* Three step markers progressing toward the minimum. */}
+      {[
+        { x: 60, y: 70, alpha: 0.4 },
+        { x: 110, y: 100, alpha: 0.7 },
+        { x: 165, y: 110, alpha: 1 },
+      ].map((p, i) => (
+        <circle key={i} cx={p.x} cy={p.y} r={4.5} fill="#7c3aed" opacity={p.alpha} />
+      ))}
+      <text x="200" y="56" fontSize="11" fill="#52525b" fontFamily="ui-monospace, monospace">
+        β ← β − η ∇L
+      </text>
+    </svg>
+  );
+}
+
+const LR_SLIDES: React.ReactNode[] = [
+  <p key="intro" className="text-[15px] leading-[1.7] text-zinc-700">
+    Linear regression is the simplest supervised model: assume the relationship between an input{" "}
+    <span className="font-mono">x</span> and an output <span className="font-mono">y</span> is a
+    straight line, then find the line that gets closest to every point.
+  </p>,
+  <IntroSlide
+    key="step1"
+    n="01"
+    title="Pick a model"
+    illustration={<IllustModel />}
+    body={
+      <>
+        Every prediction takes the same shape:{" "}
+        <span className="font-mono text-zinc-900">ŷ = β₀ + β₁·x</span>. Two numbers — an
+        intercept and a slope — define the entire line. Fitting the model means choosing the pair{" "}
+        <span className="font-mono">(β₀, β₁)</span> that best matches the data.
+      </>
+    }
+  />,
+  <IntroSlide
+    key="step2"
+    n="02"
+    title="Measure how wrong it is"
+    illustration={<IllustResiduals />}
+    body={
+      <>
+        For each point, the residual is the gap between the truth{" "}
+        <span className="font-mono">yᵢ</span> and the prediction{" "}
+        <span className="font-mono">ŷᵢ</span>. Square the gaps, average them, and you have{" "}
+        <span className="font-mono">MSE</span> — the loss the line is trying to drive down.
+        Squaring penalises big misses far more than small ones.
+      </>
+    }
+  />,
+  <IntroSlide
+    key="step3"
+    n="03"
+    title="Solve it (closed form)"
+    illustration={<IllustClosedForm />}
+    body={
+      <>
+        Because the loss is a clean quadratic in <span className="font-mono">β</span>, calculus
+        gives a one-shot answer: set the derivative to zero and solve. That&apos;s ordinary least
+        squares. No iteration, no learning rate — the optimal line in a single expression.
+      </>
+    }
+  />,
+  <IntroSlide
+    key="step4"
+    n="04"
+    title="Or learn it (gradient descent)"
+    illustration={<IllustGradientDescent />}
+    body={
+      <>
+        Start with random weights, compute the gradient{" "}
+        <span className="font-mono">∂L/∂β</span>, take a small step downhill, and repeat. Each
+        epoch shrinks the loss curve below the plot. The learning rate controls step size; too big
+        and it diverges, too small and it crawls.
+      </>
+    }
+  />,
+  <div key="try" className="text-[15px] leading-[1.7] text-zinc-700">
+    <p>
+      Try it: crank the noise up and watch <span className="font-mono">R²</span> collapse. Drop
+      the learning rate to <span className="font-mono">0.001</span> and see the loss curve barely
+      move in 300 epochs. The whole point of the playground is that the math becomes something you
+      can feel.
+    </p>
+  </div>,
+];
 
 function SidebarSection({
   title,
