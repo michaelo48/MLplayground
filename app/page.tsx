@@ -1,89 +1,15 @@
 import Link from "next/link";
 import styles from "./page.module.css";
 import { HeroDemo } from "./_components/gradient/HeroDemo";
+import { FamilyPill, type Family } from "./_components/FamilyPill";
+import { MiniPreview } from "./_components/plots/MiniPreviews";
 import {
-  ConceptBrowser,
-  type CardData,
-} from "./_components/gradient/ConceptBrowser";
-import {
-  VizCluster,
-  VizKNN,
-  VizLinear,
-  VizPCA,
-  VizTree,
-} from "./_components/gradient/CardVizzes";
+  techniques,
+  familyDescriptions,
+  type Technique,
+} from "./_lib/techniques";
 
-const filters = [
-  { id: "all", label: "All", count: 5 },
-  { id: "supervised", label: "Supervised", count: 3 },
-  { id: "unsupervised", label: "Unsupervised", count: 2 },
-] as const;
-
-const cards: CardData[] = [
-  {
-    slug: "linear-regression",
-    size: "feature",
-    topline: "L01 · Supervised · Regression",
-    duration: "Lesson · ~10 min",
-    title: "Linear regression — the line that fits.",
-    blurb:
-      "Start with the simplest possible model. Drag points onto the chart and watch the line minimize squared error in real time. Builds intuition for every model that follows.",
-    family: "supervised",
-    tags: ["least squares", "closed form", "gradient descent"],
-    badge: "START HERE",
-    meta: "Open lesson →",
-    viz: <VizLinear />,
-  },
-  {
-    slug: "k-means",
-    size: "tall",
-    topline: "L08 · Unsupervised",
-    duration: "~12 min",
-    title: "k-Means clustering",
-    blurb:
-      "Group unlabeled points by repeatedly assigning each to its nearest center, then recomputing centers.",
-    family: "unsupervised",
-    tags: ["iterative"],
-    meta: "Open →",
-    viz: <VizCluster />,
-  },
-  {
-    slug: "decision-trees",
-    size: "md",
-    topline: "L11 · Trees",
-    duration: "~11 min",
-    title: "Decision trees",
-    blurb:
-      "Twenty questions for data: split on the feature that reduces uncertainty most, then split again.",
-    family: "supervised",
-    tags: ["entropy", "gini"],
-    viz: <VizTree />,
-  },
-  {
-    slug: "k-nearest-neighbors",
-    size: "md",
-    topline: "L03 · Supervised",
-    duration: "~7 min",
-    title: "k-nearest neighbors",
-    blurb:
-      "The lazy classifier. To label a new point, ask its k closest neighbors. Featured in the demo above.",
-    family: "supervised",
-    tags: ["distance", "non-parametric"],
-    viz: <VizKNN />,
-  },
-  {
-    slug: "principal-components",
-    size: "md",
-    topline: "L09 · Unsupervised",
-    duration: "~10 min",
-    title: "Principal components",
-    blurb:
-      "Find the axes along which your data actually varies. Compress 50 dimensions into 2 you can plot.",
-    family: "unsupervised",
-    tags: ["eigenvectors"],
-    viz: <VizPCA />,
-  },
-];
+const families: Family[] = ["Supervised", "Unsupervised"];
 
 const tiles = [
   ["C 01", "Bias vs. variance", "Too simple, you miss the pattern. Too complex, you memorize noise."],
@@ -140,7 +66,7 @@ export default function Home() {
         <div className={`${styles.shell} ${styles.navInner}`}>
           <Link className={styles.brand} href="/">
             <span className={styles.brandMark} />
-            Flowstate ML
+            ML Playground
           </Link>
           <div className={styles.navLinks}>
             <Link href="/techniques">Concepts</Link>
@@ -166,8 +92,8 @@ export default function Home() {
               Machine learning, <em>by hand.</em>
             </h1>
             <p className={styles.lede}>
-              Drop points, drag knobs, watch the model learn. Every concept on Flowstate is a thing
-              you can touch — from linear regression to clustering.
+              Drop points, drag knobs, watch the model learn. Every concept on ML Playground is a
+              thing you can touch — from linear regression to clustering.
             </p>
             <div className={styles.heroCtas}>
               <Link className={`${styles.btn} ${styles.btnPrimary}`} href="/techniques">
@@ -211,7 +137,28 @@ export default function Home() {
             </div>
           </div>
 
-          <ConceptBrowser cards={cards} filters={[...filters]} />
+          <div className="flex flex-col gap-9">
+            {families.map((family) => {
+              const items = techniques.filter((t) => t.family === family);
+              if (!items.length) return null;
+              return (
+                <div key={family}>
+                  <div className="mb-4 flex items-center gap-3">
+                    <FamilyPill family={family} />
+                    <span className="font-mono text-xs uppercase tracking-[0.06em] text-zinc-500">
+                      {family.toUpperCase()} — {familyDescriptions[family]}
+                    </span>
+                    <div className="h-px flex-1 bg-zinc-200" />
+                  </div>
+                  <div className="grid grid-cols-1 gap-3.5 md:grid-cols-2 lg:grid-cols-3">
+                    {items.map((t) => (
+                      <TechniqueCard key={t.slug} technique={t} />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
 
           <div className={styles.formulaStrip}>
             <div className={styles.formulaName}>Loss · MSE</div>
@@ -222,7 +169,7 @@ export default function Home() {
             </div>
             <div className={styles.formulaExplain}>
               Mean squared error: average the squared gap between what the model said and what was
-              true. Most regression lessons on Flowstate minimize a version of this.
+              true. Most regression lessons on ML Playground minimize a version of this.
             </div>
           </div>
         </div>
@@ -292,7 +239,7 @@ export default function Home() {
           <div className={styles.brandBlock}>
             <div className={styles.brand} style={{ color: "var(--paper)" }}>
               <span className={styles.brandMark} />
-              Flowstate ML
+              ML Playground
             </div>
             <p>
               An interactive textbook for machine learning. Every concept is a thing you can touch,
@@ -349,10 +296,33 @@ export default function Home() {
           </div>
         </div>
         <div className={`${styles.shell} ${styles.footerBottom}`}>
-          <span>© 2026 Flowstate ML · v0.4.2</span>
+          <span>© 2026 ML Playground · v0.4.2</span>
           <span>Made for learners, by learners</span>
         </div>
       </footer>
     </div>
+  );
+}
+
+function TechniqueCard({ technique }: { technique: Technique }) {
+  return (
+    <Link
+      href={`/techniques/${technique.slug}`}
+      className="group flex flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white transition hover:border-zinc-300 hover:shadow-sm"
+    >
+      <div className="relative h-[168px] border-b border-zinc-100 bg-zinc-50">
+        <MiniPreview kind={technique.name} width={400} height={168} />
+      </div>
+      <div className="flex flex-col gap-2 p-[18px]">
+        <div className="flex justify-between">
+          <span className="font-mono text-[11px] uppercase tracking-[0.06em] text-zinc-400">
+            {technique.meta}
+          </span>
+          <span className="text-zinc-400 transition group-hover:text-zinc-700">→</span>
+        </div>
+        <div className="text-lg font-semibold tracking-[-0.01em]">{technique.name}</div>
+        <div className="text-[13.5px] leading-[1.55] text-zinc-600">{technique.blurb}</div>
+      </div>
+    </Link>
   );
 }

@@ -32,7 +32,7 @@ export function Header({ active = "Techniques", variant = "light" }: HeaderProps
           className="inline-block h-[11px] w-[11px] rounded-full"
           style={{ background: "linear-gradient(135deg, #34d399, #7c3aed)" }}
         />
-        Flowstate ML
+        ML Playground
       </Link>
       <nav className={`flex gap-4 text-xs sm:gap-6 sm:text-sm md:gap-7 ${muteText}`}>
         {items.map((item) => {

@@ -30,7 +30,7 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Flowstate ML — see machine learning, in motion",
+  title: "ML Playground — see machine learning, in motion",
   description:
     "Tweak the data, change a hyperparameter, watch the model learn. Each technique is a playground — not a paragraph — so you build intuition the way researchers actually do.",
 };
