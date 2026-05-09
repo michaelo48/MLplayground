@@ -38,7 +38,7 @@ function ComingSoon({
   blurb,
 }: {
   name: string;
-  family: "Supervised" | "Unsupervised" | "Neural";
+  family: "Supervised" | "Unsupervised";
   blurb: string;
 }) {
   return (

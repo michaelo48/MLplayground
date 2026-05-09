@@ -283,13 +283,22 @@ export function KNNPlayground() {
             <h1 className="text-[28px] font-semibold tracking-[-0.025em] sm:text-[32px] lg:text-[38px]">
               k-Nearest Neighbors
             </h1>
-            <button
-              onClick={reshuffle}
-              className="pill pill-solid hover:bg-zinc-800"
-              type="button"
-            >
-              {isSketch ? "Clear sketch" : "Reshuffle ⤴"}
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setIntroOpen(true)}
+                className="pill pill-outline hover:bg-zinc-50"
+                type="button"
+              >
+                ⓘ Intro
+              </button>
+              <button
+                onClick={reshuffle}
+                className="pill pill-solid hover:bg-zinc-800"
+                type="button"
+              >
+                {isSketch ? "Clear sketch" : "Reshuffle ⤴"}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -513,6 +522,121 @@ export function KNNPlayground() {
 
 // ---------- Intro modal slides ----------
 
+// Reused two-class scatter for the kNN illustrations. (x, y, class)
+const KNN_DEMO: [number, number, 0 | 1][] = [
+  [60, 100, 0], [85, 115, 0], [70, 80, 0], [50, 70, 0], [95, 95, 0],
+  [110, 65, 0], [80, 55, 0], [130, 100, 0],
+  [220, 50, 1], [240, 70, 1], [210, 85, 1], [255, 45, 1], [200, 60, 1],
+  [275, 75, 1], [260, 95, 1], [225, 30, 1],
+];
+const KNN_QUERY: [number, number] = [165, 75];
+const KNN_CLR_A = "#7c3aed";
+const KNN_CLR_B = "#ea580c";
+
+function knnDots(highlightK: number = 0, withDistances: boolean = false) {
+  // Sort by distance to highlight nearest k.
+  const sorted = KNN_DEMO.map((p, i) => ({
+    p,
+    i,
+    d: Math.hypot(p[0] - KNN_QUERY[0], p[1] - KNN_QUERY[1]),
+  })).sort((a, b) => a.d - b.d);
+  const highlightIdx = new Set(sorted.slice(0, highlightK).map((s) => s.i));
+  return (
+    <>
+      {withDistances &&
+        KNN_DEMO.map(([x, y], i) => (
+          <line
+            key={`d${i}`}
+            x1={KNN_QUERY[0]}
+            y1={KNN_QUERY[1]}
+            x2={x}
+            y2={y}
+            stroke="#a1a1aa"
+            strokeWidth="0.5"
+            opacity={0.6}
+          />
+        ))}
+      {highlightK > 0 &&
+        sorted.slice(0, highlightK).map((s, i) => (
+          <line
+            key={`h${i}`}
+            x1={KNN_QUERY[0]}
+            y1={KNN_QUERY[1]}
+            x2={s.p[0]}
+            y2={s.p[1]}
+            stroke="#52525b"
+            strokeWidth="1"
+            strokeDasharray="3 3"
+          />
+        ))}
+      {KNN_DEMO.map(([x, y, c], i) => (
+        <g key={i}>
+          {highlightIdx.has(i) && (
+            <circle cx={x} cy={y} r={7.5} fill="none" stroke={c === 0 ? KNN_CLR_A : KNN_CLR_B} strokeWidth="1.5" />
+          )}
+          <circle cx={x} cy={y} r={4} fill={c === 0 ? KNN_CLR_A : KNN_CLR_B} stroke="#fff" strokeWidth="1" />
+        </g>
+      ))}
+    </>
+  );
+}
+
+function knnQuery(predictedClass: 0 | 1 | -1 = -1) {
+  const stroke = predictedClass === 0 ? KNN_CLR_A : predictedClass === 1 ? KNN_CLR_B : "#71717a";
+  return (
+    <g>
+      <circle cx={KNN_QUERY[0]} cy={KNN_QUERY[1]} r={8} fill="#fff" stroke={stroke} strokeWidth="2.5" />
+      <line x1={KNN_QUERY[0] - 3} y1={KNN_QUERY[1]} x2={KNN_QUERY[0] + 3} y2={KNN_QUERY[1]} stroke="#71717a" strokeWidth="1" />
+      <line x1={KNN_QUERY[0]} y1={KNN_QUERY[1] - 3} x2={KNN_QUERY[0]} y2={KNN_QUERY[1] + 3} stroke="#71717a" strokeWidth="1" />
+    </g>
+  );
+}
+
+function IllustQuery() {
+  return (
+    <svg viewBox="0 0 320 150" className="block h-auto w-full" aria-hidden>
+      {knnDots()}
+      {knnQuery()}
+    </svg>
+  );
+}
+
+function IllustDistances() {
+  return (
+    <svg viewBox="0 0 320 150" className="block h-auto w-full" aria-hidden>
+      {knnDots(0, true)}
+      {knnQuery()}
+    </svg>
+  );
+}
+
+function IllustNearestK() {
+  return (
+    <svg viewBox="0 0 320 150" className="block h-auto w-full" aria-hidden>
+      {knnDots(5)}
+      {knnQuery()}
+    </svg>
+  );
+}
+
+function IllustVote() {
+  // Show 5 dots in a row representing the k votes, with a tally arrow.
+  return (
+    <svg viewBox="0 0 320 150" className="block h-auto w-full" aria-hidden>
+      <text x="20" y="32" fontSize="11" fill="#71717a" fontFamily="ui-monospace, monospace">k = 5 closest</text>
+      {[KNN_CLR_A, KNN_CLR_A, KNN_CLR_B, KNN_CLR_A, KNN_CLR_B].map((c, i) => (
+        <circle key={i} cx={40 + i * 28} cy={62} r={8} fill={c} stroke="#fff" strokeWidth="1.5" />
+      ))}
+      <text x="20" y="98" fontSize="11" fill="#71717a" fontFamily="ui-monospace, monospace">
+        tally:  A × 3  ·  B × 2
+      </text>
+      <text x="20" y="124" fontSize="13" fill={KNN_CLR_A} fontFamily="ui-monospace, monospace">
+        → predict A
+      </text>
+    </svg>
+  );
+}
+
 const KNN_SLIDES: React.ReactNode[] = [
   <p key="intro" className="text-[15px] leading-[1.7] text-zinc-700">
     k-Nearest Neighbors trains nothing. The &ldquo;model&rdquo; is just the dataset itself — when
@@ -523,6 +647,7 @@ const KNN_SLIDES: React.ReactNode[] = [
     key="step1"
     n="01"
     title="Drop a query point"
+    illustration={<IllustQuery />}
     body={
       <>
         The open ring on the canvas is the point being classified. Drag it anywhere — into a
@@ -534,6 +659,7 @@ const KNN_SLIDES: React.ReactNode[] = [
     key="step2"
     n="02"
     title="Measure distance to every training point"
+    illustration={<IllustDistances />}
     body={
       <>
         For each labelled point, compute{" "}
@@ -546,6 +672,7 @@ const KNN_SLIDES: React.ReactNode[] = [
     key="step3"
     n="03"
     title="Take the closest k"
+    illustration={<IllustNearestK />}
     body={
       <>
         Sort by distance, keep the first <span className="font-mono">k</span>. Those are the only
@@ -558,6 +685,7 @@ const KNN_SLIDES: React.ReactNode[] = [
     key="step4"
     n="04"
     title="Majority vote"
+    illustration={<IllustVote />}
     body={
       <>
         Whichever class shows up most among the <span className="font-mono">k</span> wins. Ties

@@ -191,13 +191,22 @@ export function LinearRegressionPlayground() {
           <h1 className="text-[28px] font-semibold tracking-[-0.025em] sm:text-[32px] lg:text-[38px]">
             Linear Regression
           </h1>
-          <button
-            onClick={runAnimation}
-            disabled={!hasFit || isPlaying}
-            className="pill pill-solid hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            {isPlaying ? `Running… ${safeIdx}/${epochs}` : "Run ▶"}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setIntroOpen(true)}
+              className="pill pill-outline hover:bg-zinc-50"
+              type="button"
+            >
+              ⓘ Intro
+            </button>
+            <button
+              onClick={runAnimation}
+              disabled={!hasFit || isPlaying}
+              className="pill pill-solid hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {isPlaying ? `Running… ${safeIdx}/${epochs}` : "Run ▶"}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -599,6 +608,92 @@ export function LinearRegressionPlayground() {
   );
 }
 
+// Sample points reused across the LR illustrations so the same scatter shape
+// shows in every step (point → residual → fit → descent).
+const LR_DEMO_POINTS: [number, number][] = [
+  [40, 110], [70, 95], [95, 105], [125, 85], [155, 75],
+  [185, 70], [215, 55], [245, 60], [275, 40], [300, 35],
+];
+
+function IllustModel() {
+  return (
+    <svg viewBox="0 0 320 130" className="block h-auto w-full" aria-hidden>
+      <g stroke="#e4e4e7" strokeWidth="0.5">
+        {[60, 100, 140, 180, 220, 260, 300].map((x) => (
+          <line key={x} x1={x} x2={x} y1={20} y2={115} />
+        ))}
+        {[40, 60, 80, 100].map((y) => (
+          <line key={y} x1={20} x2={310} y1={y} y2={y} />
+        ))}
+      </g>
+      <line x1="20" y1="115" x2="310" y2="115" stroke="#71717a" strokeWidth="1" />
+      <line x1="20" y1="20" x2="20" y2="115" stroke="#71717a" strokeWidth="1" />
+      <line x1="20" y1="105" x2="310" y2="35" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" />
+      <text x="160" y="58" fontSize="11" fill="#7c3aed" fontFamily="ui-monospace, monospace">
+        ŷ = β₀ + β₁·x
+      </text>
+    </svg>
+  );
+}
+
+function IllustResiduals() {
+  // Approximate fit line for the demo points.
+  const m = -0.27, b = 120;
+  return (
+    <svg viewBox="0 0 320 130" className="block h-auto w-full" aria-hidden>
+      <line x1="20" y1="115" x2="310" y2="115" stroke="#71717a" strokeWidth="1" />
+      <line x1="20" y1="20" x2="20" y2="115" stroke="#71717a" strokeWidth="1" />
+      <line x1="20" y1={m * 20 + b} x2="310" y2={m * 310 + b} stroke="#7c3aed" strokeWidth="2" />
+      {LR_DEMO_POINTS.map(([x, y], i) => (
+        <line key={`r${i}`} x1={x} y1={y} x2={x} y2={m * x + b} stroke="#7c3aed" strokeWidth="1" strokeDasharray="2 2" />
+      ))}
+      {LR_DEMO_POINTS.map(([x, y], i) => (
+        <circle key={i} cx={x} cy={y} r={3} fill="#0a0a0a" />
+      ))}
+    </svg>
+  );
+}
+
+function IllustClosedForm() {
+  const m = -0.27, b = 120;
+  return (
+    <svg viewBox="0 0 320 130" className="block h-auto w-full" aria-hidden>
+      <line x1="20" y1="115" x2="310" y2="115" stroke="#71717a" strokeWidth="1" />
+      <line x1="20" y1="20" x2="20" y2="115" stroke="#71717a" strokeWidth="1" />
+      <line x1="20" y1={m * 20 + b} x2="310" y2={m * 310 + b} stroke="#7c3aed" strokeWidth="2.5" />
+      {LR_DEMO_POINTS.map(([x, y], i) => (
+        <circle key={i} cx={x} cy={y} r={3} fill="#0a0a0a" />
+      ))}
+      <text x="200" y="44" fontSize="11" fill="#16a34a" fontFamily="ui-monospace, monospace">
+        ✓ ∂L/∂β = 0
+      </text>
+    </svg>
+  );
+}
+
+function IllustGradientDescent() {
+  // Loss landscape (parabola) with three "ball" markers walking downhill.
+  return (
+    <svg viewBox="0 0 320 130" className="block h-auto w-full" aria-hidden>
+      <line x1="20" y1="115" x2="310" y2="115" stroke="#71717a" strokeWidth="1" />
+      <line x1="20" y1="20" x2="20" y2="115" stroke="#71717a" strokeWidth="1" />
+      {/* Loss curve as a smooth bowl. */}
+      <path d="M 30 30 Q 165 200 300 30" fill="none" stroke="#a1a1aa" strokeWidth="1.5" />
+      {/* Three step markers progressing toward the minimum. */}
+      {[
+        { x: 60, y: 70, alpha: 0.4 },
+        { x: 110, y: 100, alpha: 0.7 },
+        { x: 165, y: 110, alpha: 1 },
+      ].map((p, i) => (
+        <circle key={i} cx={p.x} cy={p.y} r={4.5} fill="#7c3aed" opacity={p.alpha} />
+      ))}
+      <text x="200" y="56" fontSize="11" fill="#52525b" fontFamily="ui-monospace, monospace">
+        β ← β − η ∇L
+      </text>
+    </svg>
+  );
+}
+
 const LR_SLIDES: React.ReactNode[] = [
   <p key="intro" className="text-[15px] leading-[1.7] text-zinc-700">
     Linear regression is the simplest supervised model: assume the relationship between an input{" "}
@@ -609,6 +704,7 @@ const LR_SLIDES: React.ReactNode[] = [
     key="step1"
     n="01"
     title="Pick a model"
+    illustration={<IllustModel />}
     body={
       <>
         Every prediction takes the same shape:{" "}
@@ -622,6 +718,7 @@ const LR_SLIDES: React.ReactNode[] = [
     key="step2"
     n="02"
     title="Measure how wrong it is"
+    illustration={<IllustResiduals />}
     body={
       <>
         For each point, the residual is the gap between the truth{" "}
@@ -636,6 +733,7 @@ const LR_SLIDES: React.ReactNode[] = [
     key="step3"
     n="03"
     title="Solve it (closed form)"
+    illustration={<IllustClosedForm />}
     body={
       <>
         Because the loss is a clean quadratic in <span className="font-mono">β</span>, calculus
@@ -648,6 +746,7 @@ const LR_SLIDES: React.ReactNode[] = [
     key="step4"
     n="04"
     title="Or learn it (gradient descent)"
+    illustration={<IllustGradientDescent />}
     body={
       <>
         Start with random weights, compute the gradient{" "}

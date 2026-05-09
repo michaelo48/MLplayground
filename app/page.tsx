@@ -9,16 +9,14 @@ import {
   VizCluster,
   VizKNN,
   VizLinear,
-  VizNN,
   VizPCA,
   VizTree,
 } from "./_components/gradient/CardVizzes";
 
 const filters = [
-  { id: "all", label: "All", count: 6 },
+  { id: "all", label: "All", count: 5 },
   { id: "supervised", label: "Supervised", count: 3 },
   { id: "unsupervised", label: "Unsupervised", count: 2 },
-  { id: "neural", label: "Neural nets", count: 1 },
 ] as const;
 
 const cards: CardData[] = [
@@ -85,20 +83,6 @@ const cards: CardData[] = [
     tags: ["eigenvectors"],
     viz: <VizPCA />,
   },
-  {
-    slug: "neural-networks",
-    size: "feature",
-    topline: "L15 · Neural networks",
-    duration: "Lesson · ~14 min",
-    title: "Backprop, in slow motion.",
-    blurb:
-      "Step through gradient descent one nudge at a time. See exactly which weights move, in which direction, and by how much — for a tiny two-layer net learning XOR.",
-    family: "neural",
-    tags: ["chain rule", "SGD", "activation functions"],
-    badge: "UPDATED",
-    meta: "Open lesson →",
-    viz: <VizNN />,
-  },
 ];
 
 const tiles = [
@@ -127,12 +111,12 @@ const paths = [
   {
     num: "PATH 02 · ~5 hours",
     title: "From models to learning",
-    body: "You can fit a line. Now: trees, ensembles, and the moment everything clicks — gradient descent on a small neural net.",
+    body: "You can fit a line. Now: trees, ensembles, and the moment everything clicks — squeezing every drop of signal out of a stubborn dataset.",
     links: [
       "05 Decision trees",
       "06 Random forests & boosting",
-      "07 The perceptron",
-      "08 Backprop, in slow motion",
+      "07 Bias & variance, in practice",
+      "08 Cross-validation done right",
     ],
   },
   {
@@ -176,14 +160,14 @@ export default function Home() {
         <div className={`${styles.shell} ${styles.heroGrid}`}>
           <div>
             <span className={styles.kicker}>
-              <span className={styles.dot} /> Live · 6 interactive lessons
+              <span className={styles.dot} /> Live · 5 interactive lessons
             </span>
             <h1 className={styles.display}>
               Machine learning, <em>by hand.</em>
             </h1>
             <p className={styles.lede}>
               Drop points, drag knobs, watch the model learn. Every concept on Flowstate is a thing
-              you can touch — from k-nearest neighbors to backprop.
+              you can touch — from linear regression to clustering.
             </p>
             <div className={styles.heroCtas}>
               <Link className={`${styles.btn} ${styles.btnPrimary}`} href="/techniques">
@@ -195,11 +179,11 @@ export default function Home() {
             </div>
             <div className={styles.heroMeta}>
               <div className={styles.stat}>
-                <div className={`${styles.num} ${styles.tabular}`}>6</div>
+                <div className={`${styles.num} ${styles.tabular}`}>5</div>
                 <div className={styles.lbl}>Concepts</div>
               </div>
               <div className={styles.stat}>
-                <div className={`${styles.num} ${styles.tabular}`}>3</div>
+                <div className={`${styles.num} ${styles.tabular}`}>2</div>
                 <div className={styles.lbl}>Topic families</div>
               </div>
               <div className={styles.stat}>
@@ -222,7 +206,7 @@ export default function Home() {
               Browse concepts by <em>family</em>
             </h2>
             <div className={styles.secDesc}>
-              Three families, six concepts. Each one is a short lesson with a live visual you can
+              Two families, five concepts. Each one is a short lesson with a live visual you can
               interact with.
             </div>
           </div>
@@ -340,9 +324,6 @@ export default function Home() {
               </li>
               <li>
                 <a href="#">Unsupervised</a>
-              </li>
-              <li>
-                <a href="#">Neural networks</a>
               </li>
               <li>
                 <a href="#">Reinforcement</a>

@@ -162,52 +162,6 @@ export function PCAMini({ width, height }: SizeProps) {
   );
 }
 
-export function NNMini({ width: w, height: h }: SizeProps) {
-  const layers: number[][] = [[0.18], [0.18, 0.45, 0.72], [0.18, 0.45, 0.72], [0.45]];
-  const xs = layers.map((_, i) => 0.12 + (i / (layers.length - 1)) * 0.76);
-  const colors = ["#10b981", "#0ea5e9", "#7c3aed"];
-  const edges: React.ReactNode[] = [];
-  layers.slice(0, -1).forEach((layer, li) =>
-    layer.forEach((y1, i) =>
-      layers[li + 1].forEach((y2, j) => {
-        edges.push(
-          <line
-            key={`${li}-${i}-${j}`}
-            x1={xs[li] * w}
-            y1={y1 * h}
-            x2={xs[li + 1] * w}
-            y2={y2 * h}
-            stroke="#d4d4d8"
-          />,
-        );
-      }),
-    ),
-  );
-  const nodes: React.ReactNode[] = [];
-  layers.forEach((layer, li) =>
-    layer.forEach((y, i) => {
-      nodes.push(
-        <circle
-          key={`n-${li}-${i}`}
-          cx={xs[li] * w}
-          cy={y * h}
-          r={6}
-          fill="#fff"
-          stroke={colors[Math.min(li, 2)]}
-          strokeWidth={1.8}
-        />,
-      );
-    }),
-  );
-  return (
-    <svg width={w} height={h} className="block h-auto max-w-full">
-      <rect x={0} y={0} width={w} height={h} fill="#fff" />
-      {edges}
-      {nodes}
-    </svg>
-  );
-}
-
 const previewMap: Record<string, (s: SizeProps) => React.ReactNode> = {
   "Linear Regression": ({ width, height }) => (
     <RegressionPlot
@@ -222,7 +176,6 @@ const previewMap: Record<string, (s: SizeProps) => React.ReactNode> = {
   "Decision Trees": (s) => <TreeMini {...s} />,
   "k-Means Clustering": (s) => <KMeansMini {...s} />,
   "Principal Components": (s) => <PCAMini {...s} />,
-  "Neural Networks": (s) => <NNMini {...s} />,
 };
 
 export function MiniPreview({ kind, width, height }: SizeProps & { kind: string }) {

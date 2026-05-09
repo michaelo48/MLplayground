@@ -172,13 +172,21 @@ export function IntroSlide({
   n,
   title,
   body,
+  illustration,
 }: {
   n: string;
   title: string;
   body: ReactNode;
+  /** Optional inline visual (typically a small SVG) shown above the title. */
+  illustration?: ReactNode;
 }) {
   return (
     <div>
+      {illustration && (
+        <div className="mb-4 overflow-hidden rounded-[12px] border border-zinc-100 bg-stone-50 p-3">
+          {illustration}
+        </div>
+      )}
       <div className="font-mono text-[11px] tracking-[0.06em] text-zinc-400">
         {n}
       </div>

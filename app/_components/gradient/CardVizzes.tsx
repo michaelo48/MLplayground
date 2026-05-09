@@ -6,7 +6,6 @@ import { mulberry32 } from "../../_lib/sample-data";
 const ACCENT = "oklch(0.62 0.18 250)";
 const WARN = "oklch(0.72 0.16 60)";
 const INK = "#16181c";
-const PAPER = "#fbfaf6";
 
 function svgWrap(children: React.ReactNode, key?: string) {
   return (
@@ -118,57 +117,6 @@ export function VizForest() {
     );
   }
   return svgWrap(<>{trees}</>);
-}
-
-export function VizNN() {
-  const layers = [4, 6, 6, 2];
-  const colW = 400 / (layers.length + 1);
-  const positions: Array<Array<[number, number]>> = layers.map((n, li) => {
-    const layer: Array<[number, number]> = [];
-    for (let i = 0; i < n; i++) {
-      layer.push([colW * (li + 1), 30 + i * (160 / (n - 1 || 1))]);
-    }
-    return layer;
-  });
-  const rand = mulberry32(202);
-  const edges: React.ReactNode[] = [];
-  for (let li = 0; li < positions.length - 1; li++) {
-    for (const [x1, y1] of positions[li]) {
-      for (const [x2, y2] of positions[li + 1]) {
-        const op = 0.08 + rand() * 0.45;
-        edges.push(
-          <line
-            key={`${li}-${x1}-${y1}-${x2}-${y2}`}
-            x1={x1}
-            y1={y1}
-            x2={x2}
-            y2={y2}
-            stroke={INK}
-            strokeWidth={0.7}
-            opacity={op}
-          />,
-        );
-      }
-    }
-  }
-  const nodes: React.ReactNode[] = [];
-  positions.forEach((layer, li) => {
-    layer.forEach(([x, y], i) => {
-      const fill = li === 0 ? ACCENT : li === positions.length - 1 ? WARN : INK;
-      nodes.push(
-        <circle
-          key={`n-${li}-${i}`}
-          cx={x}
-          cy={y}
-          r={6}
-          fill={fill}
-          stroke={PAPER}
-          strokeWidth={1.5}
-        />,
-      );
-    });
-  });
-  return svgWrap(<>{edges}{nodes}</>);
 }
 
 export function VizPCA() {

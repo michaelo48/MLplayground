@@ -387,6 +387,13 @@ export function KMeansPlayground() {
             </h1>
             <div className="flex flex-wrap gap-2">
               <button
+                onClick={() => setIntroOpen(true)}
+                className="pill pill-outline hover:bg-zinc-50"
+                type="button"
+              >
+                ⓘ Intro
+              </button>
+              <button
                 onClick={reseedCentroids}
                 disabled={isPlaying}
                 className="pill pill-outline hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40"
@@ -609,6 +616,156 @@ export function KMeansPlayground() {
 
 // ---------- Intro modal slides ----------
 
+// 3 hand-shaped clusters with their "true" assignment for the illustrations.
+const KM_DEMO: { x: number; y: number; c: 0 | 1 | 2 }[] = [
+  { x: 65, y: 45, c: 0 }, { x: 80, y: 55, c: 0 }, { x: 60, y: 65, c: 0 },
+  { x: 75, y: 35, c: 0 }, { x: 90, y: 50, c: 0 }, { x: 50, y: 50, c: 0 },
+  { x: 235, y: 50, c: 1 }, { x: 250, y: 65, c: 1 }, { x: 220, y: 60, c: 1 },
+  { x: 245, y: 40, c: 1 }, { x: 260, y: 55, c: 1 }, { x: 230, y: 75, c: 1 },
+  { x: 150, y: 110, c: 2 }, { x: 165, y: 120, c: 2 }, { x: 135, y: 115, c: 2 },
+  { x: 175, y: 105, c: 2 }, { x: 145, y: 100, c: 2 }, { x: 160, y: 95, c: 2 },
+];
+const KM_PALETTE = ["#7c3aed", "#ea580c", "#0891b2"];
+
+function diamond(cx: number, cy: number, color: string, key?: string | number) {
+  const r = 7;
+  return (
+    <polygon
+      key={key}
+      points={`${cx},${cy - r} ${cx + r},${cy} ${cx},${cy + r} ${cx - r},${cy}`}
+      fill={color}
+      stroke="#0a0a0a"
+      strokeWidth="1.2"
+    />
+  );
+}
+
+function IllustPlace() {
+  // Centroids dropped at random positions — points still grey (unassigned).
+  const cents = [
+    { x: 50, y: 30 }, { x: 200, y: 30 }, { x: 110, y: 130 },
+  ];
+  return (
+    <svg viewBox="0 0 320 150" className="block h-auto w-full" aria-hidden>
+      {KM_DEMO.map((p, i) => (
+        <circle key={i} cx={p.x} cy={p.y} r={3.5} fill="#71717a" stroke="#fff" strokeWidth="1" />
+      ))}
+      {cents.map((c, i) => diamond(c.x, c.y, KM_PALETTE[i], i))}
+      <text x="20" y="146" fontSize="10" fill="#71717a" fontFamily="ui-monospace, monospace">
+        random init · k = 3
+      </text>
+    </svg>
+  );
+}
+
+function IllustAssign() {
+  // Same random centroids, points colored by nearest centroid.
+  const cents = [
+    { x: 50, y: 30 }, { x: 200, y: 30 }, { x: 110, y: 130 },
+  ];
+  const assigned = KM_DEMO.map((p) => {
+    let best = 0;
+    let bestD = Infinity;
+    cents.forEach((c, i) => {
+      const d = (p.x - c.x) ** 2 + (p.y - c.y) ** 2;
+      if (d < bestD) {
+        bestD = d;
+        best = i;
+      }
+    });
+    return best;
+  });
+  return (
+    <svg viewBox="0 0 320 150" className="block h-auto w-full" aria-hidden>
+      {KM_DEMO.map((p, i) => (
+        <circle
+          key={i}
+          cx={p.x}
+          cy={p.y}
+          r={3.5}
+          fill={KM_PALETTE[assigned[i]]}
+          stroke="#fff"
+          strokeWidth="1"
+        />
+      ))}
+      {cents.map((c, i) => diamond(c.x, c.y, KM_PALETTE[i], i))}
+    </svg>
+  );
+}
+
+function IllustMove() {
+  // Show centroids gliding from random init → cluster mean (arrow trails).
+  const oldCents = [
+    { x: 50, y: 30 }, { x: 200, y: 30 }, { x: 110, y: 130 },
+  ];
+  const newCents = [
+    { x: 70, y: 50 }, { x: 240, y: 57 }, { x: 155, y: 108 },
+  ];
+  return (
+    <svg viewBox="0 0 320 150" className="block h-auto w-full" aria-hidden>
+      {KM_DEMO.map((p) => (
+        <circle key={`${p.x}-${p.y}`} cx={p.x} cy={p.y} r={3.5} fill={KM_PALETTE[p.c]} stroke="#fff" strokeWidth="1" />
+      ))}
+      {oldCents.map((o, i) => (
+        <line key={`a${i}`} x1={o.x} y1={o.y} x2={newCents[i].x} y2={newCents[i].y} stroke="#52525b" strokeWidth="1" strokeDasharray="3 3" markerEnd="url(#km-arrow)" />
+      ))}
+      <defs>
+        <marker id="km-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+          <path d="M0 0 L6 3 L0 6 z" fill="#52525b" />
+        </marker>
+      </defs>
+      {oldCents.map((o, i) => (
+        <circle key={`o${i}`} cx={o.x} cy={o.y} r={4} fill="none" stroke={KM_PALETTE[i]} strokeWidth="1" opacity={0.4} />
+      ))}
+      {newCents.map((c, i) => diamond(c.x, c.y, KM_PALETTE[i], i))}
+    </svg>
+  );
+}
+
+function IllustRepeat() {
+  // Three mini snapshots showing convergence.
+  const frames = [
+    { cents: [{ x: 50, y: 30 }, { x: 200, y: 30 }, { x: 110, y: 130 }] },
+    { cents: [{ x: 60, y: 40 }, { x: 230, y: 50 }, { x: 145, y: 115 }] },
+    { cents: [{ x: 70, y: 50 }, { x: 245, y: 55 }, { x: 155, y: 108 }] },
+  ];
+  // Render three side-by-side mini-canvases.
+  return (
+    <svg viewBox="0 0 320 150" className="block h-auto w-full" aria-hidden>
+      {frames.map((frame, fi) => {
+        const ox = fi * 110;
+        const scale = 0.32;
+        return (
+          <g key={fi} transform={`translate(${ox}, 0)`}>
+            <rect x={3} y={3} width={104} height={130} fill="#fff" stroke="#e4e4e7" rx={6} />
+            {KM_DEMO.map((p, i) => (
+              <circle
+                key={i}
+                cx={5 + p.x * scale}
+                cy={5 + p.y * scale}
+                r={1.8}
+                fill={KM_PALETTE[p.c]}
+              />
+            ))}
+            {frame.cents.map((c, i) => (
+              <polygon
+                key={`c${i}`}
+                points={`${5 + c.x * scale},${5 + c.y * scale - 4} ${5 + c.x * scale + 4},${5 + c.y * scale} ${5 + c.x * scale},${5 + c.y * scale + 4} ${5 + c.x * scale - 4},${5 + c.y * scale}`}
+                fill={KM_PALETTE[i]}
+                stroke="#0a0a0a"
+                strokeWidth="0.8"
+              />
+            ))}
+            <text x={6} y={142} fontSize="9" fill="#71717a" fontFamily="ui-monospace, monospace">
+              iter {fi}
+            </text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
 const KMEANS_SLIDES: React.ReactNode[] = [
   <p key="intro" className="text-[15px] leading-[1.7] text-zinc-700">
     k-Means is unsupervised — there are no labels to learn from. The algorithm hallucinates a
@@ -619,6 +776,7 @@ const KMEANS_SLIDES: React.ReactNode[] = [
     key="step1"
     n="01"
     title="Place k centroids"
+    illustration={<IllustPlace />}
     body={
       <>
         Pick <span className="font-mono">k</span> starting points — usually a random sample from
@@ -631,6 +789,7 @@ const KMEANS_SLIDES: React.ReactNode[] = [
     key="step2"
     n="02"
     title="Assign every point"
+    illustration={<IllustAssign />}
     body={
       <>
         For each data point, find the nearest centroid and tag it with that cluster index. The
@@ -642,6 +801,7 @@ const KMEANS_SLIDES: React.ReactNode[] = [
     key="step3"
     n="03"
     title="Move each centroid"
+    illustration={<IllustMove />}
     body={
       <>
         Compute the mean position of every cluster&apos;s assigned points and snap each centroid
@@ -653,6 +813,7 @@ const KMEANS_SLIDES: React.ReactNode[] = [
     key="step4"
     n="04"
     title="Repeat — guaranteed to converge"
+    illustration={<IllustRepeat />}
     body={
       <>
         Each iteration is guaranteed to lower (or hold) the inertia. When no point switches
