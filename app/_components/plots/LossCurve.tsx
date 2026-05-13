@@ -29,6 +29,14 @@ function defaultPath(points: number): Array<[number, number]> {
   return out;
 }
 
+// Coordinates are quantized to 2 decimals before being stringified. Without
+// rounding, SSR-vs-client floating-point jitter (e.g. Math.pow variance in
+// Adam's bias correction) leaks into the SVG `d` attribute and triggers a
+// React hydration mismatch — sub-pixel precision is enough for rendering.
+function q(n: number) {
+  return (Math.round(n * 100) / 100).toString();
+}
+
 function pathFor(
   losses: number[],
   pad: number,
@@ -44,7 +52,7 @@ function pathFor(
   for (let i = 0; i <= last; i++) {
     const t = i / xDenom;
     const norm = Math.min(1, Math.max(0, losses[i] / denom));
-    out += `${i === 0 ? "M" : "L"} ${pad + t * w} ${pad + (1 - norm) * h} `;
+    out += `${i === 0 ? "M" : "L"} ${q(pad + t * w)} ${q(pad + (1 - norm) * h)} `;
   }
   return out;
 }
@@ -137,7 +145,7 @@ export function LossCurve({
     path = defaultPath(60);
   }
   const d = path
-    .map(([t, v], i) => `${i === 0 ? "M" : "L"} ${pad + t * w} ${pad + (1 - v) * h}`)
+    .map(([t, v], i) => `${i === 0 ? "M" : "L"} ${q(pad + t * w)} ${q(pad + (1 - v) * h)}`)
     .join(" ");
   const last = path[path.length - 1];
 
@@ -147,7 +155,7 @@ export function LossCurve({
       <line x1={pad} y1={pad + h} x2={pad + w} y2={pad + h} stroke="#e4e4e7" />
       <line x1={pad} y1={pad} x2={pad} y2={pad + h} stroke="#e4e4e7" />
       <path d={d} stroke={color} strokeWidth={1.8} fill="none" />
-      <circle cx={pad + w} cy={pad + (1 - last[1]) * h} r={3} fill={color} />
+      <circle cx={pad + w} cy={q(pad + (1 - last[1]) * h)} r={3} fill={color} />
     </svg>
   );
 }

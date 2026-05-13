@@ -171,6 +171,75 @@ export const glossary: Record<string, Entry> = {
     definition:
       "A split is only allowed if both children would still contain at least this many points. Acts as a soft regularizer — stops the tree from carving a tile around every isolated point.",
   },
+  principalComponent: {
+    term: "Principal component",
+    definition: (
+      <>
+        <p className="mb-2">
+          A direction in feature space along which the data varies. The principal components are
+          orthogonal — each one captures variance that the previous ones missed.
+        </p>
+        <ul className="space-y-1 text-zinc-600">
+          <li>
+            <b className="text-zinc-900">PC1</b> — the single line that captures the most spread.
+          </li>
+          <li>
+            <b className="text-zinc-900">PC2</b> — perpendicular to PC1, captures the leftover
+            spread. In 2D that&apos;s where the analysis ends.
+          </li>
+        </ul>
+      </>
+    ),
+  },
+  eigenvalue: {
+    term: "λ · eigenvalue",
+    definition:
+      "The variance of the data along its matching principal component. λ₁ ≥ λ₂ ≥ … by construction, so the components are listed in importance order.",
+  },
+  varianceExplained: {
+    term: "% variance explained",
+    definition:
+      "λₖ as a fraction of the total variance Σλᵢ. The cumulative share is the standard knob for picking how many PCs to keep — 90% or 95% are common cutoffs.",
+  },
+  projection: {
+    term: "Projection",
+    definition:
+      "Replacing each 2D point with its closest spot on PC1. The discarded perpendicular distance is the reconstruction error — squared and summed across points, it's exactly what PCA minimises.",
+  },
+  covariance: {
+    term: "Covariance matrix",
+    definition: (
+      <>
+        <p className="mb-2">
+          A symmetric matrix where entry <span className="font-mono">(i, j)</span> is the
+          covariance between feature i and feature j. The diagonal holds each feature&apos;s
+          variance.
+        </p>
+        <p className="text-zinc-600">
+          PCA is the eigendecomposition of this matrix — the eigenvectors are the principal
+          components, the eigenvalues are the variances along them.
+        </p>
+      </>
+    ),
+  },
+  pcaView: {
+    term: "View",
+    definition: (
+      <>
+        <p className="mb-2">How the cloud is drawn on the canvas.</p>
+        <ul className="space-y-1 text-zinc-600">
+          <li>
+            <b className="text-zinc-900">Original</b> — points in their natural (x, y)
+            coordinates.
+          </li>
+          <li>
+            <b className="text-zinc-900">Rotated</b> — the basis is changed so PC1 lies on the
+            horizontal. Same data, just viewed along its own axes of variation.
+          </li>
+        </ul>
+      </>
+    ),
+  },
   criterion: {
     term: "Split criterion",
     definition: (

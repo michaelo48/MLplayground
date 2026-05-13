@@ -285,18 +285,10 @@ export function DecisionTreePlayground() {
               </button>
               <button
                 onClick={reshuffle}
-                className="pill pill-outline hover:bg-zinc-50"
+                className="pill pill-solid hover:bg-zinc-800"
                 type="button"
               >
                 {isSketch ? "Clear sketch" : "Reshuffle ⤴"}
-              </button>
-              <button
-                onClick={runAnimation}
-                disabled={!canRun || isPlaying}
-                className="pill pill-solid hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40"
-                type="button"
-              >
-                {isPlaying ? `Growing… ${renderStep}/${tree.totalSplits}` : "Grow ▶"}
               </button>
             </div>
           </div>
@@ -471,6 +463,17 @@ export function DecisionTreePlayground() {
                   );
                 })}
               </div>
+            </SidebarSection>
+
+            <SidebarSection title="Grow tree">
+              <button
+                onClick={runAnimation}
+                disabled={!canRun || isPlaying}
+                className="pill pill-solid w-full justify-center hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40"
+                type="button"
+              >
+                {isPlaying ? `Growing… ${renderStep}/${tree.totalSplits}` : "Grow ▶"}
+              </button>
             </SidebarSection>
 
             {tree.totalSplits > 0 && (

@@ -412,20 +412,10 @@ export function KMeansPlayground() {
               <button
                 onClick={reshuffle}
                 disabled={isPlaying || isSketch}
-                className="pill pill-outline hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40"
-                type="button"
-              >
-                Reshuffle
-              </button>
-              <button
-                onClick={runAnimation}
-                disabled={!hasFit || isPlaying}
                 className="pill pill-solid hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40"
                 type="button"
               >
-                {isPlaying
-                  ? `Running… ${displayedIter}/${lastFrame}`
-                  : "Run ▶"}
+                Reshuffle
               </button>
             </div>
           </div>
@@ -570,6 +560,17 @@ export function KMeansPlayground() {
                   </>
                 )}
               </p>
+            </SidebarSection>
+
+            <SidebarSection title="Run">
+              <button
+                onClick={runAnimation}
+                disabled={!hasFit || isPlaying}
+                className="pill pill-solid w-full justify-center hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40"
+                type="button"
+              >
+                {isPlaying ? `Running… ${displayedIter}/${lastFrame}` : "Run ▶"}
+              </button>
             </SidebarSection>
 
             <SidebarSection title="Display">

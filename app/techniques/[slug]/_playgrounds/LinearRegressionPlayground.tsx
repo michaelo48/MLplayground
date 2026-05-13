@@ -207,13 +207,6 @@ export function LinearRegressionPlayground() {
             >
               ⓘ Intro
             </button>
-            <button
-              onClick={runAnimation}
-              disabled={!hasFit || isPlaying}
-              className="pill pill-solid hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              {isPlaying ? `Running… ${safeIdx}/${epochs}` : "Run ▶"}
-            </button>
           </div>
         </div>
       </div>
@@ -590,6 +583,17 @@ export function LinearRegressionPlayground() {
               accent
             />
             <ScaleLabel min="50" max="1000" />
+          </SidebarSection>
+
+          <SidebarSection title="Run">
+            <button
+              onClick={runAnimation}
+              disabled={!hasFit || isPlaying}
+              className="pill pill-solid w-full justify-center hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40"
+              type="button"
+            >
+              {isPlaying ? `Running… ${safeIdx}/${epochs}` : "Run ▶"}
+            </button>
           </SidebarSection>
 
           <SidebarSection title="The math">

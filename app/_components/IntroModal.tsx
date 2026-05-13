@@ -67,6 +67,9 @@ export function IntroModal({
       role="dialog"
       aria-modal="true"
       aria-labelledby="intro-modal-title"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
       className={`fixed inset-0 z-50 flex items-center justify-center px-4 py-8 transition-colors duration-300 ${
         visible ? "bg-black/40 backdrop-blur-sm" : "bg-transparent"
       }`}
