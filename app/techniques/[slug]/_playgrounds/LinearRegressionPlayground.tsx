@@ -7,6 +7,14 @@ import { InfoTooltip } from "../../../_components/InfoTooltip";
 import { IntroModal, IntroSlide } from "../../../_components/IntroModal";
 import { RegressionPlot } from "../../../_components/plots/RegressionPlot";
 import { LossCurve } from "../../../_components/plots/LossCurve";
+import {
+  PickerRow,
+  RangeSlider,
+  ScaleLabel,
+  SidebarSection,
+  Stat,
+  Toggle,
+} from "../../../_components/playground/primitives";
 import { glossary } from "../../../_lib/glossary";
 import type { Point } from "../../../_lib/sample-data";
 import { useElementSize } from "../../../_lib/useElementSize";
@@ -766,157 +774,3 @@ const LR_SLIDES: React.ReactNode[] = [
   </div>,
 ];
 
-function SidebarSection({
-  title,
-  children,
-}: {
-  title: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-2.5">
-      <div className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.08em] text-zinc-500">
-        {title}
-      </div>
-      <div className="flex flex-col gap-2">{children}</div>
-    </div>
-  );
-}
-
-function PickerRow({
-  label,
-  active,
-  muted,
-  disabled,
-  onClick,
-}: {
-  label: string;
-  active?: boolean;
-  muted?: boolean;
-  disabled?: boolean;
-  onClick?: () => void;
-}) {
-  const base =
-    "flex w-full items-center justify-between rounded-lg border px-2.5 py-2 text-left text-[13px] transition";
-  const cls = active
-    ? "border-zinc-950 bg-zinc-50 text-zinc-800"
-    : "border-transparent text-zinc-800 hover:bg-zinc-50";
-  const mute = muted ? " text-zinc-400" : "";
-  return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={onClick}
-      className={`${base} ${cls}${mute} ${disabled ? "cursor-not-allowed" : ""}`}
-    >
-      <span>{label}</span>
-      {active && <span className="font-mono text-[10px] text-zinc-500">✓</span>}
-    </button>
-  );
-}
-
-function RangeSlider({
-  value,
-  min,
-  max,
-  step,
-  onChange,
-  accent,
-}: {
-  value: number;
-  min: number;
-  max: number;
-  step?: number;
-  onChange: (v: number) => void;
-  accent?: boolean;
-}) {
-  const trackRef = useRef<HTMLDivElement | null>(null);
-  const update = (clientX: number) => {
-    const el = trackRef.current;
-    if (!el) return;
-    const r = el.getBoundingClientRect();
-    const ratio = Math.max(0, Math.min(1, (clientX - r.left) / r.width));
-    const raw = min + ratio * (max - min);
-    const stepped = step ? Math.round(raw / step) * step : raw;
-    onChange(Math.max(min, Math.min(max, stepped)));
-  };
-  const pct = ((value - min) / (max - min)) * 100;
-  return (
-    <div
-      ref={trackRef}
-      onPointerDown={(e) => {
-        e.currentTarget.setPointerCapture(e.pointerId);
-        update(e.clientX);
-      }}
-      onPointerMove={(e) => {
-        if (e.buttons & 1) update(e.clientX);
-      }}
-      className="relative h-2 cursor-pointer touch-none rounded bg-zinc-100"
-    >
-      <div
-        className={`absolute inset-y-0 left-0 rounded ${accent ? "bg-violet-600" : "bg-zinc-950"}`}
-        style={{ width: `${pct}%` }}
-      />
-      <div
-        className={`pointer-events-none absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white shadow ring-1 ${
-          accent ? "ring-violet-600" : "ring-zinc-950"
-        }`}
-        style={{ left: `${pct}%` }}
-      />
-    </div>
-  );
-}
-
-function ScaleLabel({ min, max }: { min: string; max: string }) {
-  return (
-    <div className="mt-1.5 flex justify-between font-mono text-[11px] text-zinc-400">
-      <span>{min}</span>
-      <span aria-hidden>────────</span>
-      <span>{max}</span>
-    </div>
-  );
-}
-
-function Toggle({
-  label,
-  on,
-  onChange,
-}: {
-  label: React.ReactNode;
-  on: boolean;
-  onChange: (v: boolean) => void;
-}) {
-  // Row instead of <button>: the label may itself contain a button (the
-  // tooltip trigger), and nesting interactive elements is invalid HTML.
-  return (
-    <div className="flex items-center justify-between text-[13px] text-zinc-800">
-      <span className="flex items-center gap-1.5">{label}</span>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={on}
-        onClick={() => onChange(!on)}
-        className={`relative inline-block h-[18px] w-[30px] flex-shrink-0 rounded-full transition-colors ${
-          on ? "bg-zinc-950" : "bg-zinc-200"
-        }`}
-      >
-        <span
-          className={`absolute top-0.5 h-3.5 w-3.5 rounded-full bg-white transition-all ${
-            on ? "left-[14px]" : "left-0.5"
-          }`}
-        />
-      </button>
-    </div>
-  );
-}
-
-function Stat({ label, value }: { label: React.ReactNode; value: string }) {
-  return (
-    <div className="bg-white px-4 py-3 text-center">
-      <div className="flex items-center justify-center gap-1 font-mono text-[10.5px] uppercase tracking-[0.06em] text-zinc-400">
-        {label}
-      </div>
-      <div className="mt-1 font-mono text-base font-medium text-zinc-950">{value}</div>
-    </div>
-  );
-}

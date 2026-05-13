@@ -1,7 +1,12 @@
-import { mulberry32 } from "./sample-data";
+import {
+  type Class,
+  type LabeledPoint,
+  generateBlobs,
+  generateMoons,
+  generateSpirals,
+} from "./datasets";
 
-export type Class = 0 | 1;
-export type LabeledPoint = { x: number; y: number; c: Class };
+export type { Class, LabeledPoint } from "./datasets";
 export type DistanceMetric = "euclidean" | "manhattan";
 
 export const distanceLabels: Record<DistanceMetric, string> = {
@@ -70,65 +75,3 @@ export const knnDatasets: Record<
   moons: { label: "Two crescents", generate: generateMoons },
   spiral: { label: "Tangled spirals", generate: generateSpirals },
 };
-
-function clamp01(v: number) {
-  return Math.max(0.02, Math.min(0.98, v));
-}
-
-function generateBlobs(seed: number): LabeledPoint[] {
-  const rand = mulberry32(seed);
-  const pts: LabeledPoint[] = [];
-  for (let i = 0; i < 22; i++) {
-    pts.push({ x: clamp01(0.27 + (rand() - 0.5) * 0.32), y: clamp01(0.7 + (rand() - 0.5) * 0.30), c: 0 });
-  }
-  for (let i = 0; i < 22; i++) {
-    pts.push({ x: clamp01(0.72 + (rand() - 0.5) * 0.32), y: clamp01(0.30 + (rand() - 0.5) * 0.30), c: 1 });
-  }
-  return pts;
-}
-
-function generateMoons(seed: number): LabeledPoint[] {
-  const rand = mulberry32(seed);
-  const pts: LabeledPoint[] = [];
-  const N = 26;
-  const noise = 0.04;
-  for (let i = 0; i < N; i++) {
-    const t = (i / (N - 1)) * Math.PI;
-    pts.push({
-      x: clamp01(0.32 + 0.30 * Math.cos(t) + (rand() - 0.5) * noise),
-      y: clamp01(0.62 - 0.28 * Math.sin(t) + (rand() - 0.5) * noise),
-      c: 0,
-    });
-  }
-  for (let i = 0; i < N; i++) {
-    const t = (i / (N - 1)) * Math.PI;
-    pts.push({
-      x: clamp01(0.62 + 0.30 * Math.cos(t + Math.PI) + (rand() - 0.5) * noise),
-      y: clamp01(0.42 - 0.28 * Math.sin(t + Math.PI) + (rand() - 0.5) * noise),
-      c: 1,
-    });
-  }
-  return pts;
-}
-
-function generateSpirals(seed: number): LabeledPoint[] {
-  const rand = mulberry32(seed);
-  const pts: LabeledPoint[] = [];
-  const N = 30;
-  const noise = 0.025;
-  for (let i = 0; i < N; i++) {
-    const t = 0.6 + (i / N) * 4.5;
-    const r = t * 0.06;
-    pts.push({
-      x: clamp01(0.5 + r * Math.cos(t) + (rand() - 0.5) * noise),
-      y: clamp01(0.5 + r * Math.sin(t) + (rand() - 0.5) * noise),
-      c: 0,
-    });
-    pts.push({
-      x: clamp01(0.5 - r * Math.cos(t) + (rand() - 0.5) * noise),
-      y: clamp01(0.5 - r * Math.sin(t) + (rand() - 0.5) * noise),
-      c: 1,
-    });
-  }
-  return pts;
-}

@@ -72,7 +72,7 @@ export function IntroModal({
       }`}
     >
       <div
-        className={`relative flex max-h-[88vh] w-full max-w-[760px] flex-col overflow-hidden rounded-[18px] border border-zinc-200 bg-white shadow-[0_24px_64px_rgba(0,0,0,0.18)] transition-all duration-500 ease-out ${
+        className={`relative flex h-[620px] max-h-[88vh] w-full max-w-[760px] flex-col overflow-hidden rounded-[18px] border border-zinc-200 bg-white shadow-[0_24px_64px_rgba(0,0,0,0.18)] transition-all duration-500 ease-out ${
           visible ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0"
         }`}
       >
@@ -111,7 +111,7 @@ export function IntroModal({
             the CSS animation re-fires (it only runs on mount). */}
         <div
           key={index}
-          className="flex-1 overflow-y-auto px-6 py-6"
+          className="flex-1 overflow-hidden px-6 py-6"
           style={{ animation: "intro-slide-in 280ms ease-out" }}
         >
           {slides[index]}
@@ -183,7 +183,7 @@ export function IntroSlide({
   return (
     <div>
       {illustration && (
-        <div className="mb-4 overflow-hidden rounded-[12px] border border-zinc-100 bg-stone-50 p-3">
+        <div className="mx-auto mb-4 w-full max-w-[480px] overflow-hidden rounded-[12px] border border-zinc-100 bg-stone-50 p-3">
           {illustration}
         </div>
       )}

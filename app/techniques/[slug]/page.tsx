@@ -6,6 +6,7 @@ import { techniques, techniqueBySlug } from "../../_lib/techniques";
 import { LinearRegressionPlayground } from "./_playgrounds/LinearRegressionPlayground";
 import { KNNPlayground } from "./_playgrounds/KNNPlayground";
 import { KMeansPlayground } from "./_playgrounds/KMeansPlayground";
+import { DecisionTreePlayground } from "./_playgrounds/DecisionTreePlayground";
 
 export function generateStaticParams() {
   return techniques.map((t) => ({ slug: t.slug }));
@@ -28,6 +29,9 @@ export default async function TechniquePage({
   }
   if (technique.slug === "k-means") {
     return <KMeansPlayground />;
+  }
+  if (technique.slug === "decision-trees") {
+    return <DecisionTreePlayground />;
   }
   return <ComingSoon name={technique.name} family={technique.family} blurb={technique.blurb} />;
 }

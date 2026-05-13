@@ -145,4 +145,50 @@ export const glossary: Record<string, Entry> = {
     definition:
       "The standard procedure for k-means: pick initial centroids → assign each point to its nearest centroid → move each centroid to the mean of its assignees → repeat until assignments stop changing.",
   },
+  maxDepth: {
+    term: "Max depth",
+    definition: (
+      <>
+        <p className="mb-2">
+          The longest chain of splits the tree is allowed to grow. Each level doubles the worst-case
+          number of leaves, so depth controls capacity directly.
+        </p>
+        <ul className="space-y-1 text-zinc-600">
+          <li>
+            <b className="text-zinc-900">Shallow</b> — broad regions, high bias, ignores fine
+            structure.
+          </li>
+          <li>
+            <b className="text-zinc-900">Deep</b> — tight regions, fits training noise, high
+            variance.
+          </li>
+        </ul>
+      </>
+    ),
+  },
+  minSamplesLeaf: {
+    term: "Min samples / leaf",
+    definition:
+      "A split is only allowed if both children would still contain at least this many points. Acts as a soft regularizer — stops the tree from carving a tile around every isolated point.",
+  },
+  criterion: {
+    term: "Split criterion",
+    definition: (
+      <>
+        <p className="mb-2">
+          The impurity measure the tree minimises when picking each split. Both reward pure children;
+          the difference is mostly cosmetic on real data.
+        </p>
+        <ul className="space-y-1 text-zinc-600">
+          <li>
+            <b className="text-zinc-900">Gini</b> — 1 − Σ pₖ². Cheaper, used by CART/sklearn default.
+          </li>
+          <li>
+            <b className="text-zinc-900">Entropy</b> — −Σ pₖ log pₖ. The information-theoretic measure
+            (used by ID3/C4.5).
+          </li>
+        </ul>
+      </>
+    ),
+  },
 };
