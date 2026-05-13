@@ -259,7 +259,7 @@ export default function Home() {
                 <Link href="/techniques/linear-regression">Playground</Link>
               </li>
               <li>
-                <a href="#">Glossary</a>
+                <Link href="/glossary">Glossary</Link>
               </li>
             </ul>
           </div>
