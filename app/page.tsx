@@ -8,19 +8,10 @@ import {
   familyDescriptions,
   type Technique,
 } from "./_lib/techniques";
+import { concepts } from "./_lib/concepts";
 
 const families: Family[] = ["Supervised", "Unsupervised"];
 
-const tiles = [
-  ["C 01", "Bias vs. variance", "Too simple, you miss the pattern. Too complex, you memorize noise."],
-  ["C 02", "Train / test split", "The golden rule: never grade a model on its homework."],
-  ["C 03", "Cross-validation", "k-fold: rotate which slice plays the role of test."],
-  ["C 04", "Regularization (L1, L2)", "Punish big weights. Get smaller, simpler models."],
-  ["C 05", "Confusion matrix", "Four numbers that tell you exactly how a classifier fails."],
-  ["C 06", "Precision & recall", "Two ways to be right, two ways to be wrong."],
-  ["C 07", "ROC & AUC", "Sweep the threshold; trade false positives for true ones."],
-  ["C 08", "The curse of dimensionality", "Why 1000 features is almost always worse than 10 good ones."],
-];
 
 const paths = [
   {
@@ -74,10 +65,6 @@ export default function Home() {
             <Link href="/techniques/linear-regression">Playground</Link>
             <a href="#about">About</a>
           </div>
-          <button className={styles.navCta}>
-            <span className={styles.dot} />
-            Start learning
-          </button>
         </div>
       </nav>
 
@@ -190,12 +177,12 @@ export default function Home() {
           </div>
 
           <div className={styles.tiles}>
-            {tiles.map(([num, name, desc]) => (
-              <a key={num} className={styles.tile} href="#">
-                <span className={styles.tNum}>{num}</span>
-                <span className={styles.tName}>{name}</span>
-                <span className={styles.tDesc}>{desc}</span>
-              </a>
+            {concepts.map((c) => (
+              <Link key={c.slug} className={styles.tile} href={`/concepts/${c.slug}`}>
+                <span className={styles.tNum}>{c.num}</span>
+                <span className={styles.tName}>{c.name}</span>
+                <span className={styles.tDesc}>{c.blurb}</span>
+              </Link>
             ))}
           </div>
         </div>

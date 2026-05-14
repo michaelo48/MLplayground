@@ -103,6 +103,7 @@ export default function GlossaryPage() {
     <div className="flex min-h-screen flex-1 flex-col bg-white text-zinc-950">
       <Header active="Glossary" />
 
+      <div className="mx-auto w-full max-w-[1320px]">
       <section className="px-4 pt-10 sm:px-8 md:px-14 md:pt-12">
         <div className="font-mono text-xs uppercase tracking-[0.06em] text-zinc-500">
           Reference · {totalTerms} terms · {sections.length} groups
@@ -133,6 +134,7 @@ export default function GlossaryPage() {
           <SectionBlock key={s.id} section={s} />
         ))}
       </section>
+      </div>
     </div>
   );
 }
